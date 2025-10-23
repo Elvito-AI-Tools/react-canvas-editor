@@ -55,7 +55,9 @@ export interface EditorContextType {
   elements: CanvasElement[];
   selectedId: string | null;
   canvasSize: CanvasSize;
+  frameBgColor: string;
   setCanvasSize: (size: CanvasSize) => void;
+  setFrameBgColor: (color: string) => void;
   addElement: (type: CanvasElement['type'], initialProps?: Partial<CanvasElement>) => void;
   updateElement: (id: string, props: Partial<CanvasElement>) => void;
   deleteElement: (id: string) => void;
