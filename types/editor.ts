@@ -51,13 +51,20 @@ export const CANVAS_SIZES: CanvasSize[] = [
   { id: 'portrait', name: 'Portrait (9:16)', width: 1080, height: 1920, ratio: '9:16' },
 ];
 
+export interface FrameBackground {
+  type: 'color' | 'image';
+  value: string; // hex color or image URL
+}
+
 export interface EditorContextType {
   elements: CanvasElement[];
   selectedId: string | null;
   canvasSize: CanvasSize;
   frameBgColor: string;
+  frameBgImage: string | null;
   setCanvasSize: (size: CanvasSize) => void;
   setFrameBgColor: (color: string) => void;
+  setFrameBgImage: (url: string | null) => void;
   addElement: (type: CanvasElement['type'], initialProps?: Partial<CanvasElement>) => void;
   updateElement: (id: string, props: Partial<CanvasElement>) => void;
   deleteElement: (id: string) => void;

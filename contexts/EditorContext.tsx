@@ -11,6 +11,7 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
 export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [canvasSize, setCanvasSize] = useState<CanvasSize>(CANVAS_SIZES[0]);
   const [frameBgColor, setFrameBgColor] = useState<string>('#ffffff');
+  const [frameBgImage, setFrameBgImage] = useState<string | null>(null);
 
   const {
     elements,
@@ -43,8 +44,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     selectedId,
     canvasSize,
     frameBgColor,
+    frameBgImage,
     setCanvasSize,
     setFrameBgColor,
+    setFrameBgImage,
     addElement,
     updateElement,
     deleteElement,
