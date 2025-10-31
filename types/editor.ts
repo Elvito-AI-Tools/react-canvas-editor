@@ -16,7 +16,13 @@ export interface TextElement extends BaseElement {
   fontSize: number;
   fontFamily: string;
   fill: string;
-  align: string;
+  align: 'left' | 'center' | 'right' | 'justify';
+  isBold: boolean;
+  isItalic: boolean;
+  isUnderline: boolean;
+  isStrikethrough: boolean;
+  backgroundColor: string | null;
+  padding: number;
 }
 
 export interface RectangleElement extends BaseElement {
@@ -65,7 +71,7 @@ export interface EditorContextType {
   setCanvasSize: (size: CanvasSize) => void;
   setFrameBgColor: (color: string) => void;
   setFrameBgImage: (url: string | null) => void;
-  addElement: (type: CanvasElement['type'], initialProps?: Partial<CanvasElement>) => void;
+  addElement: (type: CanvasElement['type'], initialProps?: Partial<CanvasElement>) => string;
   updateElement: (id: string, props: Partial<CanvasElement>) => void;
   deleteElement: (id: string) => void;
   setSelectedId: (id: string | null) => void;
