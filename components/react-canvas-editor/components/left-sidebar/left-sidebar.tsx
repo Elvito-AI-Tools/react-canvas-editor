@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Type, Shapes, Sparkles, Image } from 'lucide-react';
+import TextLeftSidebar from './components/text-left-sidebar';
 
 type SidebarItemId = 'text' | 'shapes' | 'icons' | 'photos'
 
@@ -16,7 +17,7 @@ const LeftSidebar = () => {
   const [active, setActive] = useState<SidebarItemId | null>(null);
 
   const activeLabel = useMemo(() => ITEMS.find(i => i.id === active)?.label ?? '', [active]);
-
+  
   return (
     <div className="relative h-full flex">
       {/* Primary narrow rail */}
@@ -63,8 +64,14 @@ const LeftSidebar = () => {
                 Close
               </button>
             </div>
-            <div className="flex-1 p-4 text-sm text-muted-foreground">
-              Placeholder content for {activeLabel}
+            <div className="flex-1">
+              {active === 'text' ? (
+                <TextLeftSidebar />
+              ) : (
+                <div className="flex-1 p-4 text-sm text-muted-foreground">
+                  Placeholder content for {activeLabel}
+                </div>
+              )}
             </div>
           </div>
         )}
