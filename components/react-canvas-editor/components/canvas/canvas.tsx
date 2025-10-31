@@ -1,13 +1,15 @@
 "use client"
 
-import React, { useRef, useEffect, useState } from 'react'
-import { Stage, Layer, Rect } from 'react-konva'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
+import { Stage, Layer, Rect, Label, Tag, Text as KonvaText, Transformer } from 'react-konva'
 import { useEditor } from '@/contexts/EditorContext'
 import { useZoom } from '@/hooks/useZoom'
 import type Konva from 'konva'
 import { Button } from '@/components/ui/button'
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
 import { FrameToolbar } from '../frame-toolbar/frame-toolbar'
+import { TextToolbar } from '../text-toolbar/text-toolbar'
+import type { CanvasElement, TextElement } from '@/types/editor'
 
 /**
  * Canvas component renders the main Konva Stage that fills the entire container
@@ -15,10 +17,21 @@ import { FrameToolbar } from '../frame-toolbar/frame-toolbar'
  * Frame is selectable and will contain all user-added elements
  */
 const Canvas = () => {
-  const { canvasSize, frameBgColor, frameBgImage, selectedId, setSelectedId } = useEditor()
+  const {
+    canvasSize,
+    frameBgColor,
+    frameBgImage,
+    selectedId,
+    setSelectedId,
+    elements,
+    updateElement,
+    getElementById,
+  } = useEditor()
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const mainFrameRef = useRef<Konva.Rect>(null)
+  const transformerRef = useRef<Konva.Transformer>(null)
+  const elementNodeRefs = useRef<Record<string, Konva.Node | null>>({})
   const [isFrameHovered, setIsFrameHovered] = React.useState(false)
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
 
@@ -45,6 +58,192 @@ const Canvas = () => {
   })
 
   const isFrameSelected = selectedId === 'main-frame'
+  const selectedElement = selectedId ? getElementById(selectedId) : undefined
+
+  const handleElementClick = (id: string) => {
+    setSelectedId(id)
+  }
+
+  const renderTextElement = (element: TextElement) => {
+    const fontStyleParts: string[] = []
+    if (element.isBold) fontStyleParts.push('bold')
+    if (element.isItalic) fontStyleParts.push('italic')
+    if (fontStyleParts.length === 0) {
+      fontStyleParts.push('normal')
+    }
+
+    const decorationParts: string[] = []
+    if (element.isUnderline) decorationParts.push('underline')
+    if (element.isStrikethrough) decorationParts.push('line-through')
+
+    return (
+      <Label
+        key={element.id}
+        ref={(node) => {
+          if (node) {
+            elementNodeRefs.current[element.id] = node
+          } else {
+            delete elementNodeRefs.current[element.id]
+          }
+        }}
+        x={element.x}
+        y={element.y}
+        scaleX={element.scaleX}
+        scaleY={element.scaleY}
+        draggable={element.draggable}
+        rotation={element.rotation}
+        name={element.id}
+        onClick={(e) => {
+          e.cancelBubble = true
+          handleElementClick(element.id)
+        }}
+        onTap={(e) => {
+          e.cancelBubble = true
+          handleElementClick(element.id)
+        }}
+        onDragStart={() => handleElementClick(element.id)}
+        onDragEnd={(e) => {
+          const node = e.target
+          updateElement(element.id, {
+            x: node.x(),
+            y: node.y(),
+          })
+        }}
+        onTransformEnd={(e) => {
+          const node = e.target as unknown as Konva.Label
+          const newFontSize = Math.max(6, element.fontSize * node.scaleY())
+          updateElement(element.id, {
+            x: node.x(),
+            y: node.y(),
+            rotation: node.rotation(),
+            fontSize: Math.round(newFontSize),
+            scaleX: 1,
+            scaleY: 1,
+          })
+          node.scaleX(1)
+          node.scaleY(1)
+        }}
+        onMouseEnter={() => {
+          if (containerRef.current) {
+            containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
+          }
+        }}
+        onMouseLeave={() => {
+          if (containerRef.current) {
+            containerRef.current.style.cursor = 'default'
+          }
+        }}
+      >
+        <Tag
+          fill={element.backgroundColor ?? 'transparent'}
+          cornerRadius={6}
+          stroke="transparent"
+          strokeWidth={0}
+        />
+        <KonvaText
+          text={element.text}
+          fontSize={element.fontSize}
+          fontFamily={element.fontFamily}
+          fontStyle={fontStyleParts.join(' ')}
+          fill={element.fill}
+          align={element.align}
+          padding={element.padding}
+          textDecoration={decorationParts.join(' ')}
+        />
+      </Label>
+    )
+  }
+
+  const renderElement = (element: CanvasElement) => {
+    switch (element.type) {
+      case 'text':
+        return renderTextElement(element)
+      default:
+        return null
+    }
+  }
+
+  useEffect(() => {
+    const transformer = transformerRef.current
+    if (!transformer) {
+      return
+    }
+
+    const rafId = requestAnimationFrame(() => {
+      if (selectedId && selectedId !== 'main-frame') {
+        const selectedNode = elementNodeRefs.current[selectedId]
+        if (selectedNode && selectedNode.getStage()) {
+          transformer.nodes([selectedNode as Konva.Node])
+          transformer.forceUpdate?.()
+          selectedNode.getLayer()?.batchDraw()
+          transformer.getLayer()?.batchDraw()
+          return
+        }
+      }
+
+      if (transformer.nodes().length > 0) {
+        transformer.nodes([])
+        transformer.getLayer()?.batchDraw()
+      }
+    })
+
+    return () => {
+      cancelAnimationFrame(rafId)
+    }
+  }, [selectedId, elements])
+
+  const anchorShapeFunc = useCallback<NonNullable<Konva.TransformerConfig['anchorShapeFunc']>>((ctx: CanvasRenderingContext2D, shape: Konva.Shape) => {
+    const transformer = transformerRef.current
+    if (!transformer) return
+
+    const anchorName = shape.name?.() ?? ''
+    const size = transformer.anchorSize()
+
+    ctx.save()
+
+    if (anchorName === 'rotater') {
+      const radius = size * 0.75
+      shape.width(radius * 2)
+      shape.height(radius * 2)
+      ctx.beginPath()
+      ctx.arc(0, 0, radius, 0, Math.PI * 2, false)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+      ctx.lineWidth = 2
+      ctx.strokeStyle = '#3b82f6'
+      ctx.stroke()
+
+      ctx.beginPath()
+      ctx.strokeStyle = '#3b82f6'
+      ctx.lineWidth = 2
+      ctx.arc(0, 0, radius - 4, Math.PI * 0.25, Math.PI * 1.5, false)
+      ctx.stroke()
+
+      ctx.beginPath()
+      const arrowAngle = Math.PI * 0.25
+      const arrowRadius = radius - 4
+      const ax = Math.cos(arrowAngle) * arrowRadius
+      const ay = Math.sin(arrowAngle) * arrowRadius
+      ctx.moveTo(ax, ay)
+      ctx.lineTo(ax - 4, ay)
+      ctx.lineTo(ax, ay - 4)
+      ctx.closePath()
+      ctx.fillStyle = '#3b82f6'
+      ctx.fill()
+    } else {
+      shape.width(size)
+      shape.height(size)
+      ctx.beginPath()
+      ctx.rect(-size / 2, -size / 2, size, size)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+      ctx.lineWidth = 2
+      ctx.strokeStyle = '#3b82f6'
+      ctx.stroke()
+    }
+
+    ctx.restore()
+  }, [])
 
   // Handle frame click
   const handleFrameClick = () => {
@@ -93,6 +292,7 @@ const Canvas = () => {
     <div ref={containerRef} className="flex-1 w-full h-full bg-muted relative overflow-hidden">
       {/* Frame Toolbar - shown when frame is selected */}
       {isFrameSelected && <FrameToolbar />}
+      {selectedElement?.type === 'text' && <TextToolbar />}
 
       {/* Zoom Controls */}
       <div className="absolute bottom-6 right-6 z-10 flex flex-col gap-2">
@@ -170,7 +370,21 @@ const Canvas = () => {
 
         {/* Elements Layer - will contain user-added shapes, text, images, etc. */}
         <Layer name="elements-layer">
-          {/* Dynamic elements will be rendered here later */}
+          {elements.map((element) => renderElement(element))}
+          <Transformer
+            ref={transformerRef}
+            rotateEnabled
+            enabledAnchors={['top-left','top-center','top-right','middle-right','bottom-right','bottom-center','bottom-left','middle-left']}
+            anchorStroke="#3b82f6"
+            anchorFill="#ffffff"
+            anchorStrokeWidth={2}
+            anchorCornerRadius={2}
+            anchorSize={12}
+            borderStroke="#3b82f6"
+            borderStrokeWidth={2}
+            rotateAnchorOffset={48}
+            anchorShapeFunc={anchorShapeFunc}
+          />
         </Layer>
       </Stage>
     </div>
