@@ -82,8 +82,14 @@ const ImageElementComponent = ({
           y: node.y(),
         })
       }}
+      onTransform={(e) => {
+        const node = e.target
+        const snapResult = calculateSnapPosition(node)
+        showSnapLines(snapResult.snapLines)
+      }}
       onTransformEnd={(e) => {
         const node = e.target as Konva.Image
+        hideSnapLines()
         const scaleX = node.scaleX()
         const scaleY = node.scaleY()
         
@@ -227,8 +233,14 @@ const Canvas = () => {
             y: node.y(),
           })
         }}
+        onTransform={(e) => {
+          const node = e.target
+          const snapResult = calculateSnapPosition(node)
+          showSnapLines(snapResult.snapLines)
+        }}
         onTransformEnd={(e) => {
           const node = e.target as unknown as Konva.Label
+          hideSnapLines()
           const newFontSize = Math.max(6, element.fontSize * node.scaleY())
           updateElement(element.id, {
             x: node.x(),
