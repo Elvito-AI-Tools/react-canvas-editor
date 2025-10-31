@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { Stage, Layer, Rect, Label, Tag, Text as KonvaText, Transformer } from 'react-konva'
+import { Stage, Layer, Rect, Label, Tag, Text as KonvaText, Transformer, Line } from 'react-konva'
 import { useEditor } from '@/contexts/EditorContext'
 import { useZoom } from '@/hooks/useZoom'
+import { useSnapping } from '@/hooks/useSnapping'
 import type Konva from 'konva'
 import { Button } from '@/components/ui/button'
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
@@ -57,6 +58,13 @@ const Canvas = () => {
     padding: 50,
   })
 
+  // Use the snapping hook for smart guides
+  const { calculateSnapPosition, activeSnapLines, showSnapLines, hideSnapLines } = useSnapping({
+    canvasWidth: canvasSize.width,
+    canvasHeight: canvasSize.height,
+    snapThreshold: 5,
+  })
+
   const isFrameSelected = selectedId === 'main-frame'
   const selectedElement = selectedId ? getElementById(selectedId) : undefined
 
@@ -102,8 +110,16 @@ const Canvas = () => {
           handleElementClick(element.id)
         }}
         onDragStart={() => handleElementClick(element.id)}
+        onDragMove={(e) => {
+          const node = e.target
+          const snapResult = calculateSnapPosition(node)
+          node.x(snapResult.x)
+          node.y(snapResult.y)
+          showSnapLines(snapResult.snapLines)
+        }}
         onDragEnd={(e) => {
           const node = e.target
+          hideSnapLines()
           updateElement(element.id, {
             x: node.x(),
             y: node.y(),
@@ -385,6 +401,24 @@ const Canvas = () => {
             rotateAnchorOffset={48}
             anchorShapeFunc={anchorShapeFunc}
           />
+        </Layer>
+
+        {/* Snap Guide Lines Layer */}
+        <Layer name="snap-guides-layer" listening={false}>
+          {activeSnapLines.map((line, index) => (
+            <Line
+              key={`snap-line-${index}`}
+              points={
+                line.orientation === 'vertical'
+                  ? [line.position, 0, line.position, canvasSize.height]
+                  : [0, line.position, canvasSize.width, line.position]
+              }
+              stroke="#ff00ff"
+              strokeWidth={1 / zoom}
+              dash={[4 / zoom, 4 / zoom]}
+              listening={false}
+            />
+          ))}
         </Layer>
       </Stage>
     </div>
