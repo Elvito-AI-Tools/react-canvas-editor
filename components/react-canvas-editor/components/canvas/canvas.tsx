@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import { Stage, Layer, Rect } from 'react-konva'
 import { useEditor } from '@/contexts/EditorContext'
 import { useZoom } from '@/hooks/useZoom'
@@ -15,11 +15,26 @@ import { FrameToolbar } from '../frame-toolbar/frame-toolbar'
  * Frame is selectable and will contain all user-added elements
  */
 const Canvas = () => {
-  const { canvasSize, frameBgColor, selectedId, setSelectedId } = useEditor()
+  const { canvasSize, frameBgColor, frameBgImage, selectedId, setSelectedId } = useEditor()
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const mainFrameRef = useRef<Konva.Rect>(null)
   const [isFrameHovered, setIsFrameHovered] = React.useState(false)
+  const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
+
+  // Load background image when frameBgImage changes
+  useEffect(() => {
+    if (frameBgImage) {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.src = frameBgImage
+      img.onload = () => {
+        setBgImage(img)
+      }
+    } else {
+      setBgImage(null)
+    }
+  }, [frameBgImage])
   
   // Use the zoom hook to manage all zoom-related logic
   const { zoom, position, dimensions, zoomIn, zoomOut, resetZoom } = useZoom({
@@ -134,7 +149,10 @@ const Canvas = () => {
             y={0}
             width={canvasSize.width}
             height={canvasSize.height}
-            fill={frameBgColor}
+            fill={bgImage ? undefined : frameBgColor}
+            fillPatternImage={bgImage || undefined}
+            fillPatternScaleX={bgImage ? canvasSize.width / bgImage.width : 1}
+            fillPatternScaleY={bgImage ? canvasSize.height / bgImage.height : 1}
             stroke={getStrokeColor()}
             strokeWidth={getStrokeWidth()}
             shadowColor="#000000"
