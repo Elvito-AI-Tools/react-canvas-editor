@@ -52,7 +52,11 @@ export function useSnapping({
       // Snap to vertical guides (X-axis)
       const verticalSnaps = [
         { guide: canvasLeft, nodePos: nodeLeft, offset: 0 }, // Snap left edge to canvas left
+        { guide: canvasLeft, nodePos: nodeRight, offset: -nodeRect.width }, // Snap right edge to canvas left
+        { guide: canvasCenterX, nodePos: nodeLeft, offset: 0 }, // Snap left edge to canvas center
         { guide: canvasCenterX, nodePos: nodeCenterX, offset: -nodeRect.width / 2 }, // Snap center to canvas center
+        { guide: canvasCenterX, nodePos: nodeRight, offset: -nodeRect.width }, // Snap right edge to canvas center
+        { guide: canvasRight, nodePos: nodeLeft, offset: 0 }, // Snap left edge to canvas right
         { guide: canvasRight, nodePos: nodeRight, offset: -nodeRect.width }, // Snap right edge to canvas right
       ];
 
@@ -71,7 +75,11 @@ export function useSnapping({
       // Snap to horizontal guides (Y-axis)
       const horizontalSnaps = [
         { guide: canvasTop, nodePos: nodeTop, offset: 0 }, // Snap top edge to canvas top
+        { guide: canvasTop, nodePos: nodeBottom, offset: -nodeRect.height }, // Snap bottom edge to canvas top
+        { guide: canvasCenterY, nodePos: nodeTop, offset: 0 }, // Snap top edge to canvas center
         { guide: canvasCenterY, nodePos: nodeCenterY, offset: -nodeRect.height / 2 }, // Snap center to canvas center
+        { guide: canvasCenterY, nodePos: nodeBottom, offset: -nodeRect.height }, // Snap bottom edge to canvas center
+        { guide: canvasBottom, nodePos: nodeTop, offset: 0 }, // Snap top edge to canvas bottom
         { guide: canvasBottom, nodePos: nodeBottom, offset: -nodeRect.height }, // Snap bottom edge to canvas bottom
       ];
 
