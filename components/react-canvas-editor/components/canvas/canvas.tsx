@@ -1,16 +1,118 @@
 "use client"
 
 import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { Stage, Layer, Rect, Label, Tag, Text as KonvaText, Transformer, Line } from 'react-konva'
+import { Stage, Layer, Rect, Label, Tag, Text as KonvaText, Transformer, Line, Image as KonvaImage } from 'react-konva'
 import { useEditor } from '@/contexts/EditorContext'
 import { useZoom } from '@/hooks/useZoom'
-import { useSnapping } from '@/hooks/useSnapping'
+import { useSnapping, type SnapLine } from '@/hooks/useSnapping'
 import type Konva from 'konva'
 import { Button } from '@/components/ui/button'
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
 import { FrameToolbar } from '../frame-toolbar/frame-toolbar'
 import { TextToolbar } from '../text-toolbar/text-toolbar'
-import type { CanvasElement, TextElement } from '@/types/editor'
+import type { CanvasElement, TextElement, ImageElement } from '@/types/editor'
+import useImage from 'use-image'
+
+/**
+ * ImageElementComponent - Handles loading and rendering of image elements
+ */
+interface ImageElementComponentProps {
+  element: ImageElement
+  elementNodeRefs: React.MutableRefObject<Record<string, Konva.Node | null>>
+  containerRef: React.RefObject<HTMLDivElement | null>
+  calculateSnapPosition: (node: Konva.Node) => { x: number; y: number; snapLines: SnapLine[] }
+  showSnapLines: (lines: SnapLine[]) => void
+  hideSnapLines: () => void
+  handleElementClick: (id: string) => void
+  updateElement: (id: string, props: Partial<CanvasElement>) => void
+}
+
+const ImageElementComponent = ({ 
+  element, 
+  elementNodeRefs, 
+  containerRef,
+  calculateSnapPosition,
+  showSnapLines,
+  hideSnapLines,
+  handleElementClick,
+  updateElement
+}: ImageElementComponentProps) => {
+  const [image] = useImage(element.src, 'anonymous')
+
+  return (
+    <KonvaImage
+      ref={(node) => {
+        if (node) {
+          elementNodeRefs.current[element.id] = node
+        } else {
+          delete elementNodeRefs.current[element.id]
+        }
+      }}
+      image={image}
+      x={element.x}
+      y={element.y}
+      width={element.width}
+      height={element.height}
+      scaleX={element.scaleX}
+      scaleY={element.scaleY}
+      rotation={element.rotation}
+      draggable={element.draggable}
+      name={element.id}
+      onClick={(e) => {
+        e.cancelBubble = true
+        handleElementClick(element.id)
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true
+        handleElementClick(element.id)
+      }}
+      onDragStart={() => handleElementClick(element.id)}
+      onDragMove={(e) => {
+        const node = e.target
+        const snapResult = calculateSnapPosition(node)
+        node.x(snapResult.x)
+        node.y(snapResult.y)
+        showSnapLines(snapResult.snapLines)
+      }}
+      onDragEnd={(e) => {
+        const node = e.target
+        hideSnapLines()
+        updateElement(element.id, {
+          x: node.x(),
+          y: node.y(),
+        })
+      }}
+      onTransformEnd={(e) => {
+        const node = e.target as Konva.Image
+        const scaleX = node.scaleX()
+        const scaleY = node.scaleY()
+        
+        // Update element with new dimensions
+        updateElement(element.id, {
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(5, element.width * scaleX),
+          height: Math.max(5, element.height * scaleY),
+          rotation: node.rotation(),
+        })
+        
+        // Reset scale
+        node.scaleX(1)
+        node.scaleY(1)
+      }}
+      onMouseEnter={() => {
+        if (containerRef.current) {
+          containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
+        }
+      }}
+      onMouseLeave={() => {
+        if (containerRef.current) {
+          containerRef.current.style.cursor = 'default'
+        }
+      }}
+    />
+  )
+}
 
 /**
  * Canvas component renders the main Konva Stage that fills the entire container
@@ -170,10 +272,28 @@ const Canvas = () => {
     )
   }
 
+  const renderImageElement = (element: ImageElement) => {
+    return (
+      <ImageElementComponent
+        key={element.id}
+        element={element}
+        elementNodeRefs={elementNodeRefs}
+        containerRef={containerRef}
+        calculateSnapPosition={calculateSnapPosition}
+        showSnapLines={showSnapLines}
+        hideSnapLines={hideSnapLines}
+        handleElementClick={handleElementClick}
+        updateElement={updateElement}
+      />
+    )
+  }
+
   const renderElement = (element: CanvasElement) => {
     switch (element.type) {
       case 'text':
         return renderTextElement(element)
+      case 'image':
+        return renderImageElement(element)
       default:
         return null
     }
