@@ -62,18 +62,44 @@ export interface FrameBackground {
   value: string; // hex color or image URL
 }
 
+export interface Frame {
+  id: string;
+  elements: CanvasElement[];
+  bgColor: string;
+  bgImage: string | null;
+  name: string;
+}
+
 export interface EditorContextType {
+  // Frame management
+  frames: Frame[];
+  currentFrameIndex: number;
+  currentFrame: Frame;
+  
+  // Frame operations
+  addFrame: () => void;
+  duplicateFrame: (index: number) => void;
+  deleteFrame: (index: number) => void;
+  goToFrame: (index: number) => void;
+  nextFrame: () => void;
+  previousFrame: () => void;
+  
+  // Element operations (scoped to current frame)
   elements: CanvasElement[];
   selectedId: string | null;
-  canvasSize: CanvasSize;
-  frameBgColor: string;
-  frameBgImage: string | null;
-  setCanvasSize: (size: CanvasSize) => void;
-  setFrameBgColor: (color: string) => void;
-  setFrameBgImage: (url: string | null) => void;
   addElement: (type: CanvasElement['type'], initialProps?: Partial<CanvasElement>) => string;
   updateElement: (id: string, props: Partial<CanvasElement>) => void;
   deleteElement: (id: string) => void;
   setSelectedId: (id: string | null) => void;
   getElementById: (id: string) => CanvasElement | undefined;
+  
+  // Canvas settings (shared across all frames)
+  canvasSize: CanvasSize;
+  setCanvasSize: (size: CanvasSize) => void;
+  
+  // Frame background (specific to current frame)
+  frameBgColor: string;
+  frameBgImage: string | null;
+  setFrameBgColor: (color: string) => void;
+  setFrameBgImage: (url: string | null) => void;
 }
