@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
 import { FrameToolbar } from '../frame-toolbar/frame-toolbar'
 import { TextToolbar } from '../text-toolbar/text-toolbar'
+import { ImageToolbar } from '../image-toolbar/image-toolbar'
 import type { CanvasElement, TextElement, ImageElement } from '@/types/editor'
 import useImage from 'use-image'
 
@@ -441,6 +442,7 @@ const Canvas = () => {
       {/* Frame Toolbar - shown when frame is selected */}
       {isFrameSelected && <FrameToolbar />}
       {selectedElement?.type === 'text' && <TextToolbar />}
+      {selectedElement?.type === 'image' && <ImageToolbar />}
 
       {/* Zoom Controls */}
       <div className="absolute bottom-6 right-6 z-10 flex flex-col gap-2">
