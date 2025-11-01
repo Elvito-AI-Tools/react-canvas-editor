@@ -23,6 +23,7 @@ export interface TextElement extends BaseElement {
   isStrikethrough: boolean;
   backgroundColor: string | null;
   padding: number;
+  width: number;
 }
 
 export interface RectangleElement extends BaseElement {

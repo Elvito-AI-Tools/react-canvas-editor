@@ -120,6 +120,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           isStrikethrough: false,
           backgroundColor: null,
           padding: 10,
+          width: 400,
           ...initialProps,
         } as CanvasElement;
         break;
