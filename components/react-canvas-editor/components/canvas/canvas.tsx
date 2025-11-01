@@ -11,6 +11,7 @@ import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
 import { FrameToolbar } from '../frame-toolbar/frame-toolbar'
 import { TextToolbar } from '../text-toolbar/text-toolbar'
 import { ImageToolbar } from '../image-toolbar/image-toolbar'
+import { FrameNavigation } from '../frame-navigation/frame-navigation'
 import type { CanvasElement, TextElement, ImageElement } from '@/types/editor'
 import useImage from 'use-image'
 
@@ -439,6 +440,9 @@ const Canvas = () => {
 
   return (
     <div ref={containerRef} className="flex-1 w-full h-full bg-muted relative overflow-hidden">
+      {/* Frame Navigation - always visible */}
+      <FrameNavigation />
+      
       {/* Frame Toolbar - shown when frame is selected */}
       {isFrameSelected && <FrameToolbar />}
       {selectedElement?.type === 'text' && <TextToolbar />}
