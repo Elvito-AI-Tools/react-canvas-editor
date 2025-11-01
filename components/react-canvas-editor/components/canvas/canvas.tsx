@@ -505,8 +505,34 @@ const Canvas = () => {
             height={canvasSize.height}
             fill={bgImage ? undefined : frameBgColor}
             fillPatternImage={bgImage || undefined}
-            fillPatternScaleX={bgImage ? canvasSize.width / bgImage.width : 1}
-            fillPatternScaleY={bgImage ? canvasSize.height / bgImage.height : 1}
+            fillPatternScaleX={bgImage ? (() => {
+              // Object-cover: scale to fill canvas while maintaining aspect ratio
+              const scaleX = canvasSize.width / bgImage.width
+              const scaleY = canvasSize.height / bgImage.height
+              return Math.max(scaleX, scaleY) // Use larger scale to cover
+            })() : 1}
+            fillPatternScaleY={bgImage ? (() => {
+              // Object-cover: scale to fill canvas while maintaining aspect ratio
+              const scaleX = canvasSize.width / bgImage.width
+              const scaleY = canvasSize.height / bgImage.height
+              return Math.max(scaleX, scaleY) // Use larger scale to cover
+            })() : 1}
+            fillPatternOffsetX={bgImage ? (() => {
+              // Center the image if it overflows
+              const scaleX = canvasSize.width / bgImage.width
+              const scaleY = canvasSize.height / bgImage.height
+              const scale = Math.max(scaleX, scaleY)
+              const scaledWidth = bgImage.width * scale
+              return (scaledWidth - canvasSize.width) / (2 * scale)
+            })() : 0}
+            fillPatternOffsetY={bgImage ? (() => {
+              // Center the image if it overflows
+              const scaleX = canvasSize.width / bgImage.width
+              const scaleY = canvasSize.height / bgImage.height
+              const scale = Math.max(scaleX, scaleY)
+              const scaledHeight = bgImage.height * scale
+              return (scaledHeight - canvasSize.height) / (2 * scale)
+            })() : 0}
             stroke={getStrokeColor()}
             strokeWidth={getStrokeWidth()}
             shadowColor="#000000"
