@@ -13,6 +13,17 @@ export function useKeyboardShortcuts({
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keyboard shortcuts when user is typing in input fields
+      const target = e.target as HTMLElement;
+      const isInputField = 
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+      
+      if (isInputField) {
+        return; // Don't process shortcuts when typing in input fields
+      }
+
       // Delete selected element
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
         e.preventDefault();
