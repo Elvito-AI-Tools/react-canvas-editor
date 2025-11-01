@@ -46,34 +46,6 @@ export function useZoom({
     [canvasWidth, canvasHeight]
   );
 
-  // Zoom to a specific level while keeping point under cursor/touch stationary
-  const zoomToPoint = useCallback(
-    (newZoom: number, pointX: number, pointY: number) => {
-      if (!containerRef.current) return;
-
-      const containerWidth = containerRef.current.offsetWidth;
-      const containerHeight = containerRef.current.offsetHeight;
-
-      // Clamp zoom
-      const clampedZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM);
-
-      // Calculate new position to keep the point stationary
-      const mousePointTo = {
-        x: (pointX - position.x) / zoom,
-        y: (pointY - position.y) / zoom,
-      };
-
-      const newPosition = {
-        x: pointX - mousePointTo.x * clampedZoom,
-        y: pointY - mousePointTo.y * clampedZoom,
-      };
-
-      setZoom(clampedZoom);
-      setPosition(newPosition);
-    },
-    [containerRef, zoom, position]
-  );
-
   // Calculate optimal zoom and position to fit frame with padding
   const fitToScreen = useCallback(() => {
     if (!containerRef.current) return;
@@ -175,21 +147,28 @@ export function useZoom({
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
 
-        const rect = container.getBoundingClientRect();
-        const pointerX = e.clientX - rect.left;
-        const pointerY = e.clientY - rect.top;
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
 
         // Calculate new zoom based on wheel delta
         const delta = -e.deltaY * WHEEL_ZOOM_SPEED;
-        const newZoom = zoom * (1 + delta);
+        const newZoom = Math.min(Math.max(zoom * (1 + delta), MIN_ZOOM), MAX_ZOOM);
 
-        zoomToPoint(newZoom, pointerX, pointerY);
+        // Center the canvas at the new zoom level
+        const newPosition = calculateCenteredPosition(
+          newZoom,
+          containerWidth,
+          containerHeight
+        );
+
+        setZoom(newZoom);
+        setPosition(newPosition);
       }
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [containerRef, zoom, zoomToPoint]);
+  }, [containerRef, zoom, calculateCenteredPosition]);
 
   // Handle touch pinch zoom
   useEffect(() => {
@@ -220,16 +199,22 @@ export function useZoom({
           touch2.clientY - touch1.clientY
         );
 
-        // Calculate center point between two fingers
-        const rect = container.getBoundingClientRect();
-        const centerX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
-        const centerY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
 
         // Calculate zoom delta
         const delta = (distance - lastPinchDistanceRef.current) * PINCH_ZOOM_SPEED;
-        const newZoom = zoom * (1 + delta);
+        const newZoom = Math.min(Math.max(zoom * (1 + delta), MIN_ZOOM), MAX_ZOOM);
 
-        zoomToPoint(newZoom, centerX, centerY);
+        // Center the canvas at the new zoom level
+        const newPosition = calculateCenteredPosition(
+          newZoom,
+          containerWidth,
+          containerHeight
+        );
+
+        setZoom(newZoom);
+        setPosition(newPosition);
         lastPinchDistanceRef.current = distance;
       }
     };
@@ -251,7 +236,7 @@ export function useZoom({
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [containerRef, zoom, zoomToPoint]);
+  }, [containerRef, zoom, calculateCenteredPosition]);
 
   return {
     zoom,
