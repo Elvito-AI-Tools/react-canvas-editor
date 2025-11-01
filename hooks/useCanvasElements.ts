@@ -43,6 +43,7 @@ export function useCanvasElements() {
             isStrikethrough: textProps.isStrikethrough ?? false,
             backgroundColor: textProps.backgroundColor ?? null,
             padding: textProps.padding ?? 12,
+            width: textProps.width ?? 400,
           } satisfies TextElement;
           break;
         }
