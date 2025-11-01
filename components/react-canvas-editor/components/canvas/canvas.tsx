@@ -5,6 +5,7 @@ import { Stage, Layer, Rect, Label, Tag, Text as KonvaText, Transformer, Line, I
 import { useEditor } from '@/contexts/EditorContext'
 import { useZoom } from '@/hooks/useZoom'
 import { useSnapping, type SnapLine } from '@/hooks/useSnapping'
+import { useTextLayerEdit } from '@/hooks/useTextLayerEdit'
 import type Konva from 'konva'
 import { Button } from '@/components/ui/button'
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
@@ -175,6 +176,23 @@ const Canvas = () => {
     snapThreshold: 5,
   })
 
+  // Use the text layer edit hook
+  const {
+    editingTextId,
+    textareaRef,
+    handleTextDoubleClick,
+    handleTextEdit,
+    handleTextEditComplete,
+    getTextareaStyle,
+  } = useTextLayerEdit({
+    getElementById,
+    updateElement,
+    zoom,
+    position,
+    stageRef,
+    elementNodeRefs,
+  })
+
   const isFrameSelected = selectedId === 'main-frame'
   const selectedElement = selectedId ? getElementById(selectedId) : undefined
 
@@ -194,9 +212,13 @@ const Canvas = () => {
     if (element.isUnderline) decorationParts.push('underline')
     if (element.isStrikethrough) decorationParts.push('line-through')
 
+    const isEditing = editingTextId === element.id
+
     return (
       <Label
         key={element.id}
+        opacity={isEditing ? 0 : 1}
+        listening={!isEditing}
         ref={(node) => {
           if (node) {
             elementNodeRefs.current[element.id] = node
@@ -208,7 +230,7 @@ const Canvas = () => {
         y={element.y}
         scaleX={element.scaleX}
         scaleY={element.scaleY}
-        draggable={element.draggable}
+        draggable={element.draggable && !isEditing}
         rotation={element.rotation}
         name={element.id}
         onClick={(e) => {
@@ -218,6 +240,14 @@ const Canvas = () => {
         onTap={(e) => {
           e.cancelBubble = true
           handleElementClick(element.id)
+        }}
+        onDblClick={(e) => {
+          e.cancelBubble = true
+          handleTextDoubleClick(element.id)
+        }}
+        onDblTap={(e) => {
+          e.cancelBubble = true
+          handleTextDoubleClick(element.id)
         }}
         onDragStart={() => handleElementClick(element.id)}
         onDragMove={(e) => {
@@ -243,11 +273,15 @@ const Canvas = () => {
         onTransformEnd={(e) => {
           const node = e.target as unknown as Konva.Label
           hideSnapLines()
-          const newFontSize = Math.max(6, element.fontSize * node.scaleY())
+          const scaleX = node.scaleX()
+          const scaleY = node.scaleY()
+          const newWidth = Math.max(50, element.width * scaleX)
+          const newFontSize = Math.max(6, element.fontSize * scaleY)
           updateElement(element.id, {
             x: node.x(),
             y: node.y(),
             rotation: node.rotation(),
+            width: Math.round(newWidth),
             fontSize: Math.round(newFontSize),
             scaleX: 1,
             scaleY: 1,
@@ -281,6 +315,8 @@ const Canvas = () => {
           align={element.align}
           padding={element.padding}
           textDecoration={decorationParts.join(' ')}
+          width={element.width}
+          wrap="word"
         />
       </Label>
     )
@@ -320,6 +356,7 @@ const Canvas = () => {
     }
 
     const rafId = requestAnimationFrame(() => {
+      // Show transformer for selected elements (including when editing text)
       if (selectedId && selectedId !== 'main-frame') {
         const selectedNode = elementNodeRefs.current[selectedId]
         if (selectedNode && selectedNode.getStage()) {
@@ -340,7 +377,7 @@ const Canvas = () => {
     return () => {
       cancelAnimationFrame(rafId)
     }
-  }, [selectedId, elements])
+  }, [selectedId, elements, editingTextId])
 
   const anchorShapeFunc = useCallback<NonNullable<Konva.TransformerConfig['anchorShapeFunc']>>((ctx: CanvasRenderingContext2D, shape: Konva.Shape) => {
     const transformer = transformerRef.current
@@ -482,6 +519,28 @@ const Canvas = () => {
         </div>
       </div>
 
+      {/* Text editing textarea */}
+      {editingTextId && (() => {
+        const editingElement = getElementById(editingTextId)
+        if (editingElement && editingElement.type === 'text') {
+          return (
+            <textarea
+              ref={textareaRef}
+              value={editingElement.text}
+              onChange={(e) => handleTextEdit(e.target.value)}
+              onBlur={handleTextEditComplete}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  handleTextEditComplete()
+                }
+              }}
+              style={getTextareaStyle(editingElement)}
+            />
+          )
+        }
+        return null
+      })()}
+
       {/* Konva Stage fills entire container */}
       <Stage 
         ref={stageRef}
@@ -553,8 +612,8 @@ const Canvas = () => {
           {elements.map((element) => renderElement(element))}
           <Transformer
             ref={transformerRef}
-            rotateEnabled
-            enabledAnchors={['top-left','top-center','top-right','middle-right','bottom-right','bottom-center','bottom-left','middle-left']}
+            rotateEnabled={!editingTextId}
+            enabledAnchors={editingTextId ? [] : ['top-left','top-center','top-right','middle-right','bottom-right','bottom-center','bottom-left','middle-left']}
             anchorStroke="#3b82f6"
             anchorFill="#ffffff"
             anchorStrokeWidth={2}
