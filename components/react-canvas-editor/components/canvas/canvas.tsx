@@ -138,6 +138,7 @@ const Canvas = () => {
     elements,
     updateElement,
     getElementById,
+    setStageRef,
   } = useEditor()
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
@@ -146,6 +147,11 @@ const Canvas = () => {
   const elementNodeRefs = useRef<Record<string, Konva.Node | null>>({})
   const [isFrameHovered, setIsFrameHovered] = React.useState(false)
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
+
+  // Register stage ref with context for export functionality
+  useEffect(() => {
+    setStageRef(stageRef)
+  }, [setStageRef])
 
   // Load background image when frameBgImage changes
   useEffect(() => {

@@ -103,4 +103,10 @@ export interface EditorContextType {
   frameBgImage: string | null;
   setFrameBgColor: (color: string) => void;
   setFrameBgImage: (url: string | null) => void;
+  
+  // Stage ref for export functionality
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stageRef: React.RefObject<any> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setStageRef: (ref: React.RefObject<any>) => void;
 }

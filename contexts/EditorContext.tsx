@@ -22,6 +22,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [canvasSize, setCanvasSize] = useState<CanvasSize>(CANVAS_SIZES[0]);
   const [frames, setFrames] = useState<Frame[]>([createEmptyFrame('Page 1')]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const [stageRef, setStageRef] = useState<React.RefObject<any> | null>(null);
 
   // Get current frame
   const currentFrame = useMemo(() => frames[currentFrameIndex], [frames, currentFrameIndex]);
@@ -255,6 +256,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     frameBgImage: currentFrame.bgImage,
     setFrameBgColor,
     setFrameBgImage,
+    
+    // Stage ref
+    stageRef,
+    setStageRef,
   };
 
   return (
