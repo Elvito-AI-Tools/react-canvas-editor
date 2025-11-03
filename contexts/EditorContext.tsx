@@ -293,6 +293,23 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     });
   }, [currentFrameIndex]);
 
+  const reorderElements = useCallback((fromIndex: number, toIndex: number) => {
+    setFrames(prevFrames => {
+      const newFrames = [...prevFrames];
+      const elements = [...newFrames[currentFrameIndex].elements];
+      
+      const [movedElement] = elements.splice(fromIndex, 1);
+      elements.splice(toIndex, 0, movedElement);
+      
+      newFrames[currentFrameIndex] = {
+        ...newFrames[currentFrameIndex],
+        elements,
+      };
+      
+      return newFrames;
+    });
+  }, [currentFrameIndex]);
+
   // Frame background setters
   const setFrameBgColor = useCallback((color: string) => {
     setFrames(prevFrames => {
@@ -360,6 +377,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     sendBackward,
     bringToFront,
     sendToBack,
+    reorderElements,
     
     // Canvas settings
     canvasSize,

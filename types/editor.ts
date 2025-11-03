@@ -150,6 +150,7 @@ export interface EditorContextType {
   sendBackward: (id: string) => void;
   bringToFront: (id: string) => void;
   sendToBack: (id: string) => void;
+  reorderElements: (fromIndex: number, toIndex: number) => void;
   
   // Canvas settings (shared across all frames)
   canvasSize: CanvasSize;
