@@ -1,19 +1,21 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Type, Shapes, Sparkles, Image } from 'lucide-react';
+import { Type, Shapes, Sparkles, Image, Layers } from 'lucide-react';
 import TextLeftSidebar from './components/text-left-sidebar';
 import { ImageLeftSidebar } from './components/image-left-sidebar';
 import ShapeLeftSidebar from './components/shape-left-sidebar';
 import { IconLeftSidebar } from './components/icon-left-sidebar';
+import LayersLeftSidebar from './components/layers-left-sidebar';
 
-type SidebarItemId = 'text' | 'shapes' | 'icons' | 'photos'
+type SidebarItemId = 'text' | 'shapes' | 'icons' | 'photos' | 'layers'
 
 const ITEMS: { id: SidebarItemId; label: string; Icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }[] = [
   { id: 'text', label: 'Text', Icon: Type },
   { id: 'shapes', label: 'Shapes', Icon: Shapes },
   { id: 'icons', label: 'Icons', Icon: Sparkles },
   { id: 'photos', label: 'Photos', Icon: Image },
+  { id: 'layers', label: 'Layers', Icon: Layers },
 ];
 
 const LeftSidebar = () => {
@@ -72,6 +74,7 @@ const LeftSidebar = () => {
               {active === 'shapes' && <ShapeLeftSidebar />}
               {active === 'icons' && <IconLeftSidebar />}
               {active === 'photos' && <ImageLeftSidebar />}
+              {active === 'layers' && <LayersLeftSidebar />}
             </div>
           </div>
         )}
