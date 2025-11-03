@@ -5,6 +5,7 @@ import { Type, Shapes, Sparkles, Image } from 'lucide-react';
 import TextLeftSidebar from './components/text-left-sidebar';
 import { ImageLeftSidebar } from './components/image-left-sidebar';
 import ShapeLeftSidebar from './components/shape-left-sidebar';
+import { IconLeftSidebar } from './components/icon-left-sidebar';
 
 type SidebarItemId = 'text' | 'shapes' | 'icons' | 'photos'
 
@@ -69,12 +70,8 @@ const LeftSidebar = () => {
             <div className="flex-1 overflow-hidden">
               {active === 'text' && <TextLeftSidebar />}
               {active === 'shapes' && <ShapeLeftSidebar />}
+              {active === 'icons' && <IconLeftSidebar />}
               {active === 'photos' && <ImageLeftSidebar />}
-              {active !== 'text' && active !== 'shapes' && active !== 'photos' && (
-                <div className="flex-1 p-4 text-sm text-muted-foreground">
-                  Placeholder content for {activeLabel}
-                </div>
-              )}
             </div>
           </div>
         )}
