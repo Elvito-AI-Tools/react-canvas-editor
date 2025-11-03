@@ -4,9 +4,19 @@ import { CANVAS_SIZES } from '@/types/editor';
 import React from 'react'
 import { Separator } from '@/components/ui/separator'
 import { ThemeTrigger } from '@/components/ui/theme-trigger'
+import { ExportDropdown } from './export-dropdown'
+import { useExport, type ExportFormat } from '@/hooks/useExport'
 
 const TopToolbar = () => {
-  const { canvasSize, setCanvasSize } = useEditor();
+  const { canvasSize, setCanvasSize, stageRef } = useEditor();
+  
+  // Initialize export hook
+  const { exportAllFrames, isExporting, exportProgress } = useExport(stageRef);
+  
+  // Handle export
+  const handleExport = async (format: ExportFormat) => {
+    await exportAllFrames({ format, quality: 0.92, pixelRatio: 2 });
+  };
   return (
     <div className="h-16 bg-sidebar border-b border-border flex items-center px-6">
     <div className="flex items-center gap-4 flex-1">
@@ -36,12 +46,24 @@ const TopToolbar = () => {
       <div className="text-muted-foreground text-sm">
         {canvasSize.width} × {canvasSize.height}px
       </div>
-      {/* <div className="w-8 h-8 rounded border-2 border-border bg-background" title="Background: White" /> */}
+      
       <Separator
-            orientation="vertical"
-            className="mx-2 data-[orientation=vertical]:h-4"
-          />      
-          <ThemeTrigger />
+        orientation="vertical"
+        className="mx-2 data-[orientation=vertical]:h-4"
+      />
+      
+      <ExportDropdown
+        onExport={handleExport}
+        isExporting={isExporting}
+        exportProgress={exportProgress}
+      />
+      
+      <Separator
+        orientation="vertical"
+        className="mx-2 data-[orientation=vertical]:h-4"
+      />      
+      
+      <ThemeTrigger />
     </div>
   </div>
   )
