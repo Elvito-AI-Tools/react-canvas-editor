@@ -9,6 +9,7 @@ import type { IconElement } from '@/types/editor';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LayeringDropdown } from '../layering-dropdown/layering-dropdown';
 
 const PRESET_COLORS = [
   '#000000', '#ffffff', '#ef4444', '#f97316', '#f59e0b', '#eab308',
@@ -120,6 +121,11 @@ export const IconToolbar = () => {
           ))}
         </div>
       </div>
+
+      <Separator orientation="vertical" className="h-6" />
+
+      {/* Layering */}
+      <LayeringDropdown elementId={iconElement.id} />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { useEditor } from '@/contexts/EditorContext'
 import { Button } from '@/components/ui/button'
 import { Maximize2 } from 'lucide-react'
 import type { ImageElement } from '@/types/editor'
+import { LayeringDropdown } from '../layering-dropdown/layering-dropdown'
 
 export const ImageToolbar = () => {
   const { selectedId, getElementById, updateElement, canvasSize } = useEditor()
@@ -53,6 +54,12 @@ export const ImageToolbar = () => {
       <div className="text-xs text-muted-foreground">
         {Math.round(imageElement.width)} × {Math.round(imageElement.height)} px
       </div>
+
+      {/* Separator */}
+      <div className="h-6 w-px bg-border" />
+
+      {/* Layering */}
+      <LayeringDropdown elementId={imageElement.id} />
     </div>
   )
 }

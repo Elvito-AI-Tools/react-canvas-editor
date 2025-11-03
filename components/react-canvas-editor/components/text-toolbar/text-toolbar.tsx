@@ -16,6 +16,7 @@ import {
 import { ColorPickerPanel } from '../frame-toolbar/color-picker-panel'
 import type { TextElement } from '@/types/editor'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { LayeringDropdown } from '../layering-dropdown/layering-dropdown'
 
 type ActivePicker = 'text' | 'background' | null
 
@@ -178,6 +179,11 @@ export const TextToolbar = () => {
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
+
+      <div className="h-6 w-px bg-border ml-3" />
+
+      {/* Layering */}
+      <LayeringDropdown elementId={textElement.id} />
     </div>
   )
 }
