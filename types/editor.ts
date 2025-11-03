@@ -1,7 +1,7 @@
 // Base interface for all canvas elements
 export interface BaseElement {
   id: string;
-  type: 'text' | 'rectangle' | 'image' | 'shape';
+  type: 'text' | 'rectangle' | 'image' | 'shape' | 'icon';
   x: number;
   y: number;
   rotation: number;
@@ -85,7 +85,15 @@ export interface ShapeElement extends BaseElement {
   cornerRadius?: number; // for rounded shapes
 }
 
-export type CanvasElement = TextElement | RectangleElement | ImageElement | ShapeElement;
+export interface IconElement extends BaseElement {
+  type: 'icon';
+  iconName: string;
+  iconComponent: string;
+  size: number;
+  color: string;
+}
+
+export type CanvasElement = TextElement | RectangleElement | ImageElement | ShapeElement | IconElement;
 
 export interface CanvasSize {
   id: string;

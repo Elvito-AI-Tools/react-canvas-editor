@@ -149,6 +149,17 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           ...initialProps,
         } as CanvasElement;
         break;
+      case 'icon':
+        newElement = {
+          ...baseProps,
+          type: 'icon',
+          iconName: 'Heart',
+          iconComponent: 'FaHeart',
+          size: 80,
+          color: '#000000',
+          ...initialProps,
+        } as CanvasElement;
+        break;
       default:
         throw new Error(`Unsupported element type: ${type}`);
     }

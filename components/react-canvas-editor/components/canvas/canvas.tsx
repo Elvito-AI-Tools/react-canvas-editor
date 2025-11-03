@@ -13,10 +13,12 @@ import { FrameToolbar } from '../frame-toolbar/frame-toolbar'
 import { TextToolbar } from '../text-toolbar/text-toolbar'
 import { ImageToolbar } from '../image-toolbar/image-toolbar'
 import { ShapeToolbar } from '../shape-toolbar/shape-toolbar'
+import { IconToolbar } from '../icon-toolbar/icon-toolbar'
 import { FrameNavigation } from '../frame-navigation/frame-navigation'
-import type { CanvasElement, TextElement, ImageElement, ShapeElement } from '@/types/editor'
+import type { CanvasElement, TextElement, ImageElement, ShapeElement, IconElement } from '@/types/editor'
 import useImage from 'use-image'
 import { SHAPE_DEFINITIONS } from '@/lib/shapes'
+import { iconToDataURL } from '@/lib/icons'
 
 /**
  * ImageElementComponent - Handles loading and rendering of image elements
@@ -105,6 +107,120 @@ const ImageElementComponent = ({
           width: Math.max(5, element.width * scaleX),
           height: Math.max(5, element.height * scaleY),
           rotation: node.rotation(),
+        })
+        
+        // Reset scale
+        node.scaleX(1)
+        node.scaleY(1)
+      }}
+      onMouseEnter={() => {
+        if (containerRef.current) {
+          containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
+        }
+      }}
+      onMouseLeave={() => {
+        if (containerRef.current) {
+          containerRef.current.style.cursor = 'default'
+        }
+      }}
+    />
+  )
+}
+
+/**
+ * IconElementComponent - Handles rendering of icon elements
+ */
+interface IconElementComponentProps {
+  element: IconElement
+  elementNodeRefs: React.MutableRefObject<Record<string, Konva.Node | null>>
+  containerRef: React.RefObject<HTMLDivElement | null>
+  calculateSnapPosition: (node: Konva.Node) => { x: number; y: number; snapLines: SnapLine[] }
+  showSnapLines: (lines: SnapLine[]) => void
+  hideSnapLines: () => void
+  handleElementClick: (id: string) => void
+  updateElement: (id: string, props: Partial<CanvasElement>) => void
+}
+
+const IconElementComponent = ({ 
+  element, 
+  elementNodeRefs, 
+  containerRef,
+  calculateSnapPosition,
+  showSnapLines,
+  hideSnapLines,
+  handleElementClick,
+  updateElement
+}: IconElementComponentProps) => {
+  // Convert icon to data URL
+  const dataUrl = React.useMemo(() => {
+    return iconToDataURL(element.iconComponent, element.color, 512)
+  }, [element.iconComponent, element.color])
+
+  const [image] = useImage(dataUrl)
+
+  return (
+    <KonvaImage
+      ref={(node) => {
+        if (node) {
+          elementNodeRefs.current[element.id] = node
+        } else {
+          delete elementNodeRefs.current[element.id]
+        }
+      }}
+      image={image}
+      x={element.x}
+      y={element.y}
+      width={element.size}
+      height={element.size}
+      scaleX={element.scaleX}
+      scaleY={element.scaleY}
+      rotation={element.rotation}
+      draggable={element.draggable}
+      name={element.id}
+      onClick={(e) => {
+        e.cancelBubble = true
+        handleElementClick(element.id)
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true
+        handleElementClick(element.id)
+      }}
+      onDragStart={() => handleElementClick(element.id)}
+      onDragMove={(e) => {
+        const node = e.target
+        const snapResult = calculateSnapPosition(node)
+        node.x(snapResult.x)
+        node.y(snapResult.y)
+        showSnapLines(snapResult.snapLines)
+      }}
+      onDragEnd={(e) => {
+        const node = e.target
+        hideSnapLines()
+        updateElement(element.id, {
+          x: node.x(),
+          y: node.y(),
+        })
+      }}
+      onTransform={(e) => {
+        const node = e.target
+        const snapResult = calculateSnapPosition(node)
+        showSnapLines(snapResult.snapLines)
+      }}
+      onTransformEnd={(e) => {
+        const node = e.target as Konva.Image
+        hideSnapLines()
+        const scaleX = node.scaleX()
+        const scaleY = node.scaleY()
+        
+        // Update element with new size (maintain aspect ratio)
+        const avgScale = (scaleX + scaleY) / 2
+        updateElement(element.id, {
+          x: node.x(),
+          y: node.y(),
+          size: Math.max(20, element.size * avgScale),
+          rotation: node.rotation(),
+          scaleX: 1,
+          scaleY: 1,
         })
         
         // Reset scale
@@ -486,6 +602,22 @@ const Canvas = () => {
     )
   }
 
+  const renderIconElement = (element: IconElement) => {
+    return (
+      <IconElementComponent
+        key={element.id}
+        element={element}
+        elementNodeRefs={elementNodeRefs}
+        containerRef={containerRef}
+        calculateSnapPosition={calculateSnapPosition}
+        showSnapLines={showSnapLines}
+        hideSnapLines={hideSnapLines}
+        handleElementClick={handleElementClick}
+        updateElement={updateElement}
+      />
+    )
+  }
+
   const renderElement = (element: CanvasElement) => {
     switch (element.type) {
       case 'text':
@@ -494,6 +626,8 @@ const Canvas = () => {
         return renderImageElement(element)
       case 'shape':
         return renderShapeElement(element)
+      case 'icon':
+        return renderIconElement(element)
       default:
         return null
     }
@@ -635,6 +769,7 @@ const Canvas = () => {
       {selectedElement?.type === 'text' && <TextToolbar />}
       {selectedElement?.type === 'image' && <ImageToolbar />}
       {selectedElement?.type === 'shape' && <ShapeToolbar />}
+      {selectedElement?.type === 'icon' && <IconToolbar />}
 
       {/* Zoom Controls */}
       <div className="absolute bottom-6 right-6 z-10 flex flex-col gap-2">
