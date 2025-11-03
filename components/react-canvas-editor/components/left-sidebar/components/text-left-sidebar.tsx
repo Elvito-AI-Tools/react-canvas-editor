@@ -7,7 +7,7 @@ const TEXT_TEMPLATES = [
     {
       id: 'heading',
       label: 'Create header',
-      text: 'Create header',
+      text: 'Header',
       fontSize: 72,
       isBold: true,
       align: 'center' as const,
@@ -15,7 +15,7 @@ const TEXT_TEMPLATES = [
     {
       id: 'subheading',
       label: 'Create sub header',
-      text: 'Create sub header',
+      text: 'Sub header',
       fontSize: 48,
       isBold: true,
       align: 'center' as const,
@@ -23,7 +23,7 @@ const TEXT_TEMPLATES = [
     {
       id: 'body',
       label: 'Create body text',
-      text: 'Create body text',
+      text: 'Body text',
       fontSize: 24,
       isBold: false,
       align: 'left' as const,
