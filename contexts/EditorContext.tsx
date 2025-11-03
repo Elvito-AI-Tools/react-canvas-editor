@@ -145,7 +145,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           height: 200,
           fill: '#B0B0B0',
           stroke: '#808080',
-          strokeWidth: 2,
+          strokeWidth: 0,
           ...initialProps,
         } as CanvasElement;
         break;
