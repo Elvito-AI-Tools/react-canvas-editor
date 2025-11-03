@@ -145,6 +145,12 @@ export interface EditorContextType {
   setSelectedId: (id: string | null) => void;
   getElementById: (id: string) => CanvasElement | undefined;
   
+  // Layering operations
+  bringForward: (id: string) => void;
+  sendBackward: (id: string) => void;
+  bringToFront: (id: string) => void;
+  sendToBack: (id: string) => void;
+  
   // Canvas settings (shared across all frames)
   canvasSize: CanvasSize;
   setCanvasSize: (size: CanvasSize) => void;

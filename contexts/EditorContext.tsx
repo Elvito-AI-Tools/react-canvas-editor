@@ -210,6 +210,89 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     return currentFrame.elements.find(el => el.id === id);
   }, [currentFrame]);
 
+  // Layering operations
+  const bringForward = useCallback((id: string) => {
+    setFrames(prevFrames => {
+      const newFrames = [...prevFrames];
+      const elements = [...newFrames[currentFrameIndex].elements];
+      const currentIndex = elements.findIndex(el => el.id === id);
+      
+      if (currentIndex !== -1 && currentIndex < elements.length - 1) {
+        // Swap with the element above (higher z-index)
+        [elements[currentIndex], elements[currentIndex + 1]] = 
+        [elements[currentIndex + 1], elements[currentIndex]];
+        
+        newFrames[currentFrameIndex] = {
+          ...newFrames[currentFrameIndex],
+          elements,
+        };
+      }
+      
+      return newFrames;
+    });
+  }, [currentFrameIndex]);
+
+  const sendBackward = useCallback((id: string) => {
+    setFrames(prevFrames => {
+      const newFrames = [...prevFrames];
+      const elements = [...newFrames[currentFrameIndex].elements];
+      const currentIndex = elements.findIndex(el => el.id === id);
+      
+      if (currentIndex > 0) {
+        // Swap with the element below (lower z-index)
+        [elements[currentIndex], elements[currentIndex - 1]] = 
+        [elements[currentIndex - 1], elements[currentIndex]];
+        
+        newFrames[currentFrameIndex] = {
+          ...newFrames[currentFrameIndex],
+          elements,
+        };
+      }
+      
+      return newFrames;
+    });
+  }, [currentFrameIndex]);
+
+  const bringToFront = useCallback((id: string) => {
+    setFrames(prevFrames => {
+      const newFrames = [...prevFrames];
+      const elements = [...newFrames[currentFrameIndex].elements];
+      const currentIndex = elements.findIndex(el => el.id === id);
+      
+      if (currentIndex !== -1 && currentIndex < elements.length - 1) {
+        const element = elements.splice(currentIndex, 1)[0];
+        elements.push(element);
+        
+        newFrames[currentFrameIndex] = {
+          ...newFrames[currentFrameIndex],
+          elements,
+        };
+      }
+      
+      return newFrames;
+    });
+  }, [currentFrameIndex]);
+
+  const sendToBack = useCallback((id: string) => {
+    setFrames(prevFrames => {
+      const newFrames = [...prevFrames];
+      const elements = [...newFrames[currentFrameIndex].elements];
+      const currentIndex = elements.findIndex(el => el.id === id);
+      
+      if (currentIndex > 0) {
+        const element = elements.splice(currentIndex, 1)[0];
+        elements.unshift(element);
+        
+        newFrames[currentFrameIndex] = {
+          ...newFrames[currentFrameIndex],
+          elements,
+        };
+      }
+      
+      return newFrames;
+    });
+  }, [currentFrameIndex]);
+
   // Frame background setters
   const setFrameBgColor = useCallback((color: string) => {
     setFrames(prevFrames => {
@@ -271,6 +354,12 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     deleteElement,
     setSelectedId,
     getElementById,
+    
+    // Layering operations
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
     
     // Canvas settings
     canvasSize,
