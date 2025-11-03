@@ -22,6 +22,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   const [canvasSize, setCanvasSize] = useState<CanvasSize>(CANVAS_SIZES[0]);
   const [frames, setFrames] = useState<Frame[]>([createEmptyFrame('Page 1')]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stageRef, setStageRef] = useState<React.RefObject<any> | null>(null);
 
   // Get current frame
@@ -132,6 +133,19 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
           src: '',
           width: 200,
           height: 200,
+          ...initialProps,
+        } as CanvasElement;
+        break;
+      case 'shape':
+        newElement = {
+          ...baseProps,
+          type: 'shape',
+          shapeType: 'rectangle',
+          width: 200,
+          height: 200,
+          fill: '#B0B0B0',
+          stroke: '#808080',
+          strokeWidth: 2,
           ...initialProps,
         } as CanvasElement;
         break;

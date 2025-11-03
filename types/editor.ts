@@ -1,7 +1,7 @@
 // Base interface for all canvas elements
 export interface BaseElement {
   id: string;
-  type: 'text' | 'rectangle' | 'image';
+  type: 'text' | 'rectangle' | 'image' | 'shape';
   x: number;
   y: number;
   rotation: number;
@@ -42,7 +42,50 @@ export interface ImageElement extends BaseElement {
   height: number;
 }
 
-export type CanvasElement = TextElement | RectangleElement | ImageElement;
+export type ShapeType = 
+  | 'rectangle'
+  | 'circle' 
+  | 'triangle'
+  | 'star'
+  | 'pentagon'
+  | 'hexagon'
+  | 'diamond'
+  | 'heart'
+  | 'arrow-right'
+  | 'cloud'
+  | 'cloud-2'
+  | 'cloud-3'
+  | 'cloud-4'
+  | 'cloud-5'
+  | 'plus'
+  | 'rounded-rectangle'
+  | 'parallelogram'
+  | 'trapezoid'
+  | 'blob-1'
+  | 'blob-2'
+  | 'blob-3'
+  | 'blob-4'
+  | 'blob-5'
+  | 'blob-6'
+  | 'blob-7'
+  | 'blob-8'
+  | 'blob-9'
+  | 'blob-10'
+  | 'blob-11'
+  | 'blob-12';
+
+export interface ShapeElement extends BaseElement {
+  type: 'shape';
+  shapeType: ShapeType;
+  width: number;
+  height: number;
+  fill: string;
+  stroke?: string;
+  strokeWidth?: number;
+  cornerRadius?: number; // for rounded shapes
+}
+
+export type CanvasElement = TextElement | RectangleElement | ImageElement | ShapeElement;
 
 export interface CanvasSize {
   id: string;
