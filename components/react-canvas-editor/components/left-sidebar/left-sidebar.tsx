@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Type, Shapes, Sparkles, Image } from 'lucide-react';
 import TextLeftSidebar from './components/text-left-sidebar';
 import { ImageLeftSidebar } from './components/image-left-sidebar';
+import ShapeLeftSidebar from './components/shape-left-sidebar';
 
 type SidebarItemId = 'text' | 'shapes' | 'icons' | 'photos'
 
@@ -67,8 +68,9 @@ const LeftSidebar = () => {
             </div>
             <div className="flex-1 overflow-hidden">
               {active === 'text' && <TextLeftSidebar />}
+              {active === 'shapes' && <ShapeLeftSidebar />}
               {active === 'photos' && <ImageLeftSidebar />}
-              {active !== 'text' && active !== 'photos' && (
+              {active !== 'text' && active !== 'shapes' && active !== 'photos' && (
                 <div className="flex-1 p-4 text-sm text-muted-foreground">
                   Placeholder content for {activeLabel}
                 </div>
