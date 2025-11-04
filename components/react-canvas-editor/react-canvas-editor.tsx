@@ -1,6 +1,6 @@
 import React from 'react';
 import TopToolbar from './components/top-toolbar/top-toolbar';
-import LeftSidebar from './components/left-sidebar/left-sidebar';
+import LeftSidebar from './components/layers-toolbars/left-sidebar/left-sidebar';
 import Canvas from './components/canvas/canvas';
 
 
