@@ -72,7 +72,13 @@ export type ShapeType =
   | 'blob-9'
   | 'blob-10'
   | 'blob-11'
-  | 'blob-12';
+  | 'blob-12'
+  | 'line-solid'
+  | 'line-dashed'
+  | 'line-dotted'
+  | 'line-arrow'
+  | 'line-arrow-both'
+  | 'line-arrow-circle';
 
 export interface ShapeElement extends BaseElement {
   type: 'shape';

@@ -7,6 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ShapeButton = ({ shape, onClick }: { shape: ShapeDefinition; onClick: () => void }) => {
+  const isLine = shape.category === 'lines';
+  
   return (
     <button
       onClick={onClick}
@@ -20,7 +22,11 @@ const ShapeButton = ({ shape, onClick }: { shape: ShapeDefinition; onClick: () =
       >
         <path
           d={shape.svgPath}
-          fill="#B0B0B0"
+          fill={isLine ? '#B0B0B0' : '#B0B0B0'}
+          stroke={isLine ? '#B0B0B0' : 'none'}
+          strokeWidth={isLine ? '3' : '0'}
+          strokeLinecap="round"
+          strokeLinejoin="round"
           className="transition-opacity group-hover:opacity-80"
         />
       </svg>
@@ -30,21 +36,24 @@ const ShapeButton = ({ shape, onClick }: { shape: ShapeDefinition; onClick: () =
 
 const ShapeLeftSidebar = () => {
   const { addElement, setSelectedId } = useEditor();
-  const [activeTab, setActiveTab] = useState<'all' | 'basic' | 'geometric' | 'decorative' | 'arrows' | 'organic'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'lines' | 'basic' | 'geometric' | 'decorative' | 'arrows' | 'organic'>('all');
 
   const handleAddShape = (shapeType: ShapeDefinition['id']) => {
+    // Lines should have different dimensions (wider and thinner)
+    const isLine = shapeType.startsWith('line-');
     const id = addElement('shape', {
       shapeType,
-      width: 200,
-      height: 200,
-      fill: '#B0B0B0',
-      stroke: '#808080',
-      strokeWidth: 0,
+      width: isLine ? 300 : 200,
+      height: isLine ? 10 : 200,
+      fill: isLine ? '#808080' : '#B0B0B0', // Lines use fill for arrow heads
+      stroke: isLine ? '#808080' : '#808080',
+      strokeWidth: isLine ? 3 : 0,
     });
     setSelectedId(id);
   };
 
   const allShapes = getAllShapes();
+  const lineShapes = getShapesByCategory('lines');
   const basicShapes = getShapesByCategory('basic');
   const geometricShapes = getShapesByCategory('geometric');
   const decorativeShapes = getShapesByCategory('decorative');
@@ -57,13 +66,16 @@ const ShapeLeftSidebar = () => {
         <div className="px-4 pt-4">
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+            <TabsTrigger value="lines" className="text-xs">Lines</TabsTrigger>
             <TabsTrigger value="basic" className="text-xs">Basic</TabsTrigger>
-            <TabsTrigger value="organic" className="text-xs">Organic</TabsTrigger>
           </TabsList>
           <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="organic" className="text-xs">Organic</TabsTrigger>
             <TabsTrigger value="geometric" className="text-xs">Geo</TabsTrigger>
             <TabsTrigger value="decorative" className="text-xs">Deco</TabsTrigger>
-            <TabsTrigger value="arrows" className="text-xs">Arrow</TabsTrigger>
+          </TabsList>
+          <TabsList className="grid w-full grid-cols-1 mb-4">
+            <TabsTrigger value="arrows" className="text-xs">Arrows</TabsTrigger>
           </TabsList>
         </div>
 
@@ -72,6 +84,18 @@ const ShapeLeftSidebar = () => {
             <TabsContent value="all" className="mt-0">
               <div className="grid grid-cols-4 gap-3">
                 {allShapes.map((shape) => (
+                  <ShapeButton
+                    key={shape.id}
+                    shape={shape}
+                    onClick={() => handleAddShape(shape.id)}
+                  />
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="lines" className="mt-0">
+              <div className="grid grid-cols-4 gap-3">
+                {lineShapes.map((shape) => (
                   <ShapeButton
                     key={shape.id}
                     shape={shape}

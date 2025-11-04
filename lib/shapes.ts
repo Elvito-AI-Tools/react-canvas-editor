@@ -3,7 +3,7 @@ import type { ShapeType } from '@/types/editor';
 export interface ShapeDefinition {
   id: ShapeType;
   name: string;
-  category: 'basic' | 'geometric' | 'decorative' | 'arrows' | 'organic';
+  category: 'lines' | 'basic' | 'geometric' | 'decorative' | 'arrows' | 'organic';
   // SVG path for preview (normalized to 100x100 viewBox)
   svgPath: string;
   // Function to draw the shape on canvas context
@@ -717,6 +717,115 @@ export const SHAPE_DEFINITIONS: Record<ShapeType, ShapeDefinition> = {
       ctx.bezierCurveTo(w * 0.45, h * 0.95, w * 0.25, h * 0.85, w * 0.15, h * 0.65);
       ctx.bezierCurveTo(w * 0.08, h * 0.45, w * 0.12, h * 0.25, w * 0.25, h * 0.15);
       ctx.bezierCurveTo(w * 0.3, h * 0.13, w * 0.35, h * 0.15, w * 0.35, h * 0.15);
+      ctx.closePath();
+    },
+  },
+  'line-solid': {
+    id: 'line-solid',
+    name: 'Solid Line',
+    category: 'lines',
+    svgPath: 'M 10 50 L 90 50',
+    drawFunc: (ctx, w, h) => {
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+    },
+  },
+  'line-dashed': {
+    id: 'line-dashed',
+    name: 'Dashed Line',
+    category: 'lines',
+    svgPath: 'M 10 50 L 25 50 M 30 50 L 45 50 M 50 50 L 65 50 M 70 50 L 85 50',
+    drawFunc: (ctx, w, h) => {
+      ctx.beginPath();
+      ctx.setLineDash([w * 0.1, w * 0.05]);
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+    },
+  },
+  'line-dotted': {
+    id: 'line-dotted',
+    name: 'Dotted Line',
+    category: 'lines',
+    svgPath: 'M 12 50 L 14 50 M 20 50 L 22 50 M 28 50 L 30 50 M 36 50 L 38 50 M 44 50 L 46 50 M 52 50 L 54 50 M 60 50 L 62 50 M 68 50 L 70 50 M 76 50 L 78 50 M 84 50 L 86 50',
+    drawFunc: (ctx, w, h) => {
+      ctx.beginPath();
+      ctx.setLineDash([2, w * 0.04]);
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+    },
+  },
+  'line-arrow': {
+    id: 'line-arrow',
+    name: 'Arrow Line',
+    category: 'lines',
+    svgPath: 'M 10 50 L 80 50 M 80 50 L 70 42 M 80 50 L 70 58',
+    drawFunc: (ctx, w, h) => {
+      const arrowSize = Math.min(w, h) * 1.5;
+      const centerY = h / 2;
+      
+      // Line path
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(w - arrowSize, centerY);
+      
+      // Arrow head path
+      ctx.moveTo(w, centerY);
+      ctx.lineTo(w - arrowSize, centerY - arrowSize * 0.6);
+      ctx.lineTo(w - arrowSize, centerY + arrowSize * 0.6);
+      ctx.closePath();
+    },
+  },
+  'line-arrow-both': {
+    id: 'line-arrow-both',
+    name: 'Double Arrow Line',
+    category: 'lines',
+    svgPath: 'M 20 50 L 10 42 M 10 50 L 20 50 M 20 50 L 20 58 M 10 50 L 20 58 M 20 50 L 80 50 M 80 50 L 70 42 M 80 50 L 90 50 M 90 50 L 80 58',
+    drawFunc: (ctx, w, h) => {
+      const arrowSize = Math.min(w, h) * 1.5;
+      const centerY = h / 2;
+      
+      // Line path
+      ctx.beginPath();
+      ctx.moveTo(arrowSize, centerY);
+      ctx.lineTo(w - arrowSize, centerY);
+      
+      // Left arrow head
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(arrowSize, centerY - arrowSize * 0.6);
+      ctx.lineTo(arrowSize, centerY + arrowSize * 0.6);
+      ctx.closePath();
+      
+      // Right arrow head
+      ctx.moveTo(w, centerY);
+      ctx.lineTo(w - arrowSize, centerY - arrowSize * 0.6);
+      ctx.lineTo(w - arrowSize, centerY + arrowSize * 0.6);
+      ctx.closePath();
+    },
+  },
+  'line-arrow-circle': {
+    id: 'line-arrow-circle',
+    name: 'Arrow Circle Line',
+    category: 'lines',
+    svgPath: 'M 15 50 A 5 5 0 1 1 15 49.9 M 15 50 L 80 50 M 80 50 L 70 42 M 80 50 L 70 58',
+    drawFunc: (ctx, w, h) => {
+      const arrowSize = Math.min(w, h) * 1.5;
+      const circleSize = Math.min(w, h) * 0.8;
+      const centerY = h / 2;
+      
+      // Line path
+      ctx.beginPath();
+      ctx.moveTo(circleSize * 2, centerY);
+      ctx.lineTo(w - arrowSize, centerY);
+      
+      // Circle at start
+      ctx.moveTo(circleSize * 2, centerY);
+      ctx.arc(circleSize, centerY, circleSize, 0, Math.PI * 2);
+      
+      // Arrow head at end
+      ctx.moveTo(w, centerY);
+      ctx.lineTo(w - arrowSize, centerY - arrowSize * 0.6);
+      ctx.lineTo(w - arrowSize, centerY + arrowSize * 0.6);
       ctx.closePath();
     },
   },
