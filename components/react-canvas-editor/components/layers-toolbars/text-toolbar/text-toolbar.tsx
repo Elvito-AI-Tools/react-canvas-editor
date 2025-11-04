@@ -4,6 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useEditor } from '@/contexts/EditorContext'
 import { Button } from '@/components/ui/button'
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   Bold,
   Italic,
   Minus,
@@ -80,6 +83,24 @@ export const TextToolbar = () => {
   const handleClearBackground = () => {
     updateElement(textElement.id, { backgroundColor: null })
     setActivePicker(null)
+  }
+
+  const handleAlignmentChange = () => {
+    const alignments: Array<'left' | 'center' | 'right'> = ['left', 'center', 'right']
+    const currentIndex = alignments.indexOf(textElement.align as 'left' | 'center' | 'right')
+    const nextIndex = (currentIndex + 1) % alignments.length
+    updateElement(textElement.id, { align: alignments[nextIndex] })
+  }
+
+  const getAlignmentIcon = () => {
+    switch (textElement.align) {
+      case 'center':
+        return <AlignCenter className="w-4 h-4" />
+      case 'right':
+        return <AlignRight className="w-4 h-4" />
+      default:
+        return <AlignLeft className="w-4 h-4" />
+    }
   }
 
   const renderPicker = (color: string, onChange: (color: string) => void, extraContent?: React.ReactNode) => (
@@ -178,6 +199,18 @@ export const TextToolbar = () => {
             <Strikethrough className="h-4 w-4" />
           </ToggleGroupItem>
         </ToggleGroup>
+      </div>
+
+      <div className="flex items-center gap-2 pl-3 ml-3 border-l border-border">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={handleAlignmentChange}
+          aria-label="Text alignment"
+        >
+          {getAlignmentIcon()}
+        </Button>
       </div>
 
       <div className="h-6 w-px bg-border ml-3" />
