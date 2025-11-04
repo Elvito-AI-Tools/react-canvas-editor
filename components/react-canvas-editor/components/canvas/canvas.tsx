@@ -32,6 +32,9 @@ interface ImageElementComponentProps {
   hideSnapLines: () => void
   handleElementClick: (id: string) => void
   updateElement: (id: string, props: Partial<CanvasElement>) => void
+  hoveredElementId: string | null
+  setHoveredElementId: (id: string | null) => void
+  selectedId: string | null
 }
 
 const ImageElementComponent = ({ 
@@ -42,7 +45,8 @@ const ImageElementComponent = ({
   showSnapLines,
   hideSnapLines,
   handleElementClick,
-  updateElement
+  updateElement,
+  setHoveredElementId,
 }: ImageElementComponentProps) => {
   const [image] = useImage(element.src, 'anonymous')
 
@@ -114,11 +118,13 @@ const ImageElementComponent = ({
         node.scaleY(1)
       }}
       onMouseEnter={() => {
+        setHoveredElementId(element.id)
         if (containerRef.current) {
           containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
         }
       }}
       onMouseLeave={() => {
+        setHoveredElementId(null)
         if (containerRef.current) {
           containerRef.current.style.cursor = 'default'
         }
@@ -139,6 +145,9 @@ interface IconElementComponentProps {
   hideSnapLines: () => void
   handleElementClick: (id: string) => void
   updateElement: (id: string, props: Partial<CanvasElement>) => void
+  hoveredElementId: string | null
+  setHoveredElementId: (id: string | null) => void
+  selectedId: string | null
 }
 
 const IconElementComponent = ({ 
@@ -149,7 +158,8 @@ const IconElementComponent = ({
   showSnapLines,
   hideSnapLines,
   handleElementClick,
-  updateElement
+  updateElement,
+  setHoveredElementId,
 }: IconElementComponentProps) => {
   // Convert icon to data URL
   const dataUrl = React.useMemo(() => {
@@ -228,11 +238,13 @@ const IconElementComponent = ({
         node.scaleY(1)
       }}
       onMouseEnter={() => {
+        setHoveredElementId(element.id)
         if (containerRef.current) {
           containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
         }
       }}
       onMouseLeave={() => {
+        setHoveredElementId(null)
         if (containerRef.current) {
           containerRef.current.style.cursor = 'default'
         }
@@ -253,6 +265,9 @@ interface ShapeElementComponentProps {
   hideSnapLines: () => void
   handleElementClick: (id: string) => void
   updateElement: (id: string, props: Partial<CanvasElement>) => void
+  hoveredElementId: string | null
+  setHoveredElementId: (id: string | null) => void
+  selectedId: string | null
 }
 
 const ShapeElementComponent = ({
@@ -263,7 +278,8 @@ const ShapeElementComponent = ({
   showSnapLines,
   hideSnapLines,
   handleElementClick,
-  updateElement
+  updateElement,
+  setHoveredElementId,
 }: ShapeElementComponentProps) => {
   const shapeDefinition = SHAPE_DEFINITIONS[element.shapeType]
 
@@ -352,11 +368,13 @@ const ShapeElementComponent = ({
         node.scaleY(1)
       }}
       onMouseEnter={() => {
+        setHoveredElementId(element.id)
         if (containerRef.current) {
           containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
         }
       }}
       onMouseLeave={() => {
+        setHoveredElementId(null)
         if (containerRef.current) {
           containerRef.current.style.cursor = 'default'
         }
@@ -388,6 +406,7 @@ const Canvas = () => {
   const transformerRef = useRef<Konva.Transformer>(null)
   const elementNodeRefs = useRef<Record<string, Konva.Node | null>>({})
   const [isFrameHovered, setIsFrameHovered] = React.useState(false)
+  const [hoveredElementId, setHoveredElementId] = React.useState<string | null>(null)
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
 
   // Register stage ref with context for export functionality
@@ -540,11 +559,13 @@ const Canvas = () => {
           node.scaleY(1)
         }}
         onMouseEnter={() => {
+          setHoveredElementId(element.id)
           if (containerRef.current) {
             containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
           }
         }}
         onMouseLeave={() => {
+          setHoveredElementId(null)
           if (containerRef.current) {
             containerRef.current.style.cursor = 'default'
           }
@@ -584,6 +605,9 @@ const Canvas = () => {
         hideSnapLines={hideSnapLines}
         handleElementClick={handleElementClick}
         updateElement={updateElement}
+        hoveredElementId={hoveredElementId}
+        setHoveredElementId={setHoveredElementId}
+        selectedId={selectedId}
       />
     )
   }
@@ -600,6 +624,9 @@ const Canvas = () => {
         hideSnapLines={hideSnapLines}
         handleElementClick={handleElementClick}
         updateElement={updateElement}
+        hoveredElementId={hoveredElementId}
+        setHoveredElementId={setHoveredElementId}
+        selectedId={selectedId}
       />
     )
   }
@@ -616,6 +643,9 @@ const Canvas = () => {
         hideSnapLines={hideSnapLines}
         handleElementClick={handleElementClick}
         updateElement={updateElement}
+        hoveredElementId={hoveredElementId}
+        setHoveredElementId={setHoveredElementId}
+        selectedId={selectedId}
       />
     )
   }
@@ -898,6 +928,28 @@ const Canvas = () => {
         {/* Elements Layer - will contain user-added shapes, text, images, etc. */}
         <Layer name="elements-layer">
           {elements.map((element) => renderElement(element))}
+          
+          {/* Hover Indicator - shows bounding box on hover */}
+          {hoveredElementId && hoveredElementId !== selectedId && (() => {
+            const node = elementNodeRefs.current[hoveredElementId]
+            if (!node) return null
+            
+            const clientRect = node.getClientRect({ relativeTo: node.getParent()! })
+            
+            return (
+              <Rect
+                x={clientRect.x}
+                y={clientRect.y}
+                width={clientRect.width}
+                height={clientRect.height}
+                stroke="#3b82f6"
+                strokeWidth={3}
+                listening={false}
+                dash={[]}
+              />
+            )
+          })()}
+          
           <Transformer
             ref={transformerRef}
             rotateEnabled={!editingTextId}
