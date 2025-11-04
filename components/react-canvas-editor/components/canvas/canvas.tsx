@@ -422,6 +422,8 @@ const Canvas = () => {
     canvasWidth: canvasSize.width,
     canvasHeight: canvasSize.height,
     snapThreshold: 5,
+    elementNodesRef: elementNodeRefs,
+    currentElementId: selectedId ?? undefined,
   })
 
   // Use the text layer edit hook
