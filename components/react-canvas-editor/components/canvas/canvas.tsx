@@ -15,6 +15,7 @@ import { ImageToolbar } from '../layers-toolbars/image-toolbar/image-toolbar'
 import { ShapeToolbar } from '../layers-toolbars/shape-toolbar/shape-toolbar'
 import { IconToolbar } from '../layers-toolbars/icon-toolbar/icon-toolbar'
 import { FrameNavigation } from '../frame-navigation/frame-navigation'
+import { CanvasContextMenu } from './canvas-context-menu'
 import type { CanvasElement, TextElement, ImageElement, ShapeElement, IconElement } from '@/types/editor'
 import useImage from 'use-image'
 import { SHAPE_DEFINITIONS } from '@/lib/shapes'
@@ -35,6 +36,7 @@ interface ImageElementComponentProps {
   hoveredElementId: string | null
   setHoveredElementId: (id: string | null) => void
   selectedId: string | null
+  onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => void
 }
 
 const ImageElementComponent = ({ 
@@ -47,6 +49,7 @@ const ImageElementComponent = ({
   handleElementClick,
   updateElement,
   setHoveredElementId,
+  onContextMenu,
 }: ImageElementComponentProps) => {
   const [image] = useImage(element.src, 'anonymous')
 
@@ -129,6 +132,7 @@ const ImageElementComponent = ({
           containerRef.current.style.cursor = 'default'
         }
       }}
+      onContextMenu={(e) => onContextMenu(e, element.id)}
     />
   )
 }
@@ -148,6 +152,7 @@ interface IconElementComponentProps {
   hoveredElementId: string | null
   setHoveredElementId: (id: string | null) => void
   selectedId: string | null
+  onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => void
 }
 
 const IconElementComponent = ({ 
@@ -160,6 +165,7 @@ const IconElementComponent = ({
   handleElementClick,
   updateElement,
   setHoveredElementId,
+  onContextMenu,
 }: IconElementComponentProps) => {
   // Convert icon to data URL
   const dataUrl = React.useMemo(() => {
@@ -249,6 +255,7 @@ const IconElementComponent = ({
           containerRef.current.style.cursor = 'default'
         }
       }}
+      onContextMenu={(e) => onContextMenu(e, element.id)}
     />
   )
 }
@@ -268,6 +275,7 @@ interface ShapeElementComponentProps {
   hoveredElementId: string | null
   setHoveredElementId: (id: string | null) => void
   selectedId: string | null
+  onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => void
 }
 
 const ShapeElementComponent = ({
@@ -280,6 +288,7 @@ const ShapeElementComponent = ({
   handleElementClick,
   updateElement,
   setHoveredElementId,
+  onContextMenu,
 }: ShapeElementComponentProps) => {
   const shapeDefinition = SHAPE_DEFINITIONS[element.shapeType]
 
@@ -379,6 +388,7 @@ const ShapeElementComponent = ({
           containerRef.current.style.cursor = 'default'
         }
       }}
+      onContextMenu={(e) => onContextMenu(e, element.id)}
     />
   )
 }
@@ -399,6 +409,8 @@ const Canvas = () => {
     updateElement,
     getElementById,
     setStageRef,
+    addElement,
+    deleteElement,
   } = useEditor()
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
@@ -408,6 +420,8 @@ const Canvas = () => {
   const [isFrameHovered, setIsFrameHovered] = React.useState(false)
   const [hoveredElementId, setHoveredElementId] = React.useState<string | null>(null)
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
+  const [contextMenuElement, setContextMenuElement] = React.useState<string | null>(null)
+  const [contextMenuPosition, setContextMenuPosition] = React.useState<{ x: number; y: number } | null>(null)
 
   // Register stage ref with context for export functionality
   useEffect(() => {
@@ -468,6 +482,64 @@ const Canvas = () => {
   const handleElementClick = (id: string) => {
     setSelectedId(id)
   }
+
+  // Handle duplicate element
+  const handleDuplicateElement = useCallback(() => {
+    if (!contextMenuElement) return;
+    
+    const element = getElementById(contextMenuElement);
+    if (!element) return;
+
+    // Create a duplicate with offset position
+    const duplicateProps = {
+      ...element,
+      x: element.x + 20,
+      y: element.y + 20,
+    };
+
+    // Remove the id from duplicateProps as addElement will generate a new one
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, ...propsWithoutId } = duplicateProps;
+    
+    const newId = addElement(element.type, propsWithoutId);
+    setSelectedId(newId);
+  }, [contextMenuElement, getElementById, addElement, setSelectedId]);
+
+  // Handle delete element
+  const handleDeleteElement = useCallback(() => {
+    if (!contextMenuElement) return;
+    
+    deleteElement(contextMenuElement);
+    setSelectedId(null);
+  }, [contextMenuElement, deleteElement, setSelectedId]);
+
+  // Handle closing context menu
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenuElement(null);
+    setContextMenuPosition(null);
+  }, []);
+
+  // Handle context menu (right-click) on elements
+  const handleElementContextMenu = useCallback((e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => {
+    e.evt.preventDefault();
+    e.cancelBubble = true;
+    
+    // Get the mouse position relative to the viewport
+    const stage = e.target.getStage();
+    if (!stage) return;
+    
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (!containerRect) return;
+    
+    // Use the pointer position from the event
+    setContextMenuPosition({
+      x: e.evt.clientX,
+      y: e.evt.clientY,
+    });
+    
+    setContextMenuElement(elementId);
+    setSelectedId(elementId);
+  }, [setSelectedId]);
 
   const renderTextElement = (element: TextElement) => {
     const fontStyleParts: string[] = []
@@ -570,6 +642,7 @@ const Canvas = () => {
             containerRef.current.style.cursor = 'default'
           }
         }}
+        onContextMenu={(e) => handleElementContextMenu(e, element.id)}
       >
         <Tag
           fill={element.backgroundColor ?? 'transparent'}
@@ -608,6 +681,7 @@ const Canvas = () => {
         hoveredElementId={hoveredElementId}
         setHoveredElementId={setHoveredElementId}
         selectedId={selectedId}
+        onContextMenu={handleElementContextMenu}
       />
     )
   }
@@ -627,6 +701,7 @@ const Canvas = () => {
         hoveredElementId={hoveredElementId}
         setHoveredElementId={setHoveredElementId}
         selectedId={selectedId}
+        onContextMenu={handleElementContextMenu}
       />
     )
   }
@@ -646,6 +721,7 @@ const Canvas = () => {
         hoveredElementId={hoveredElementId}
         setHoveredElementId={setHoveredElementId}
         selectedId={selectedId}
+        onContextMenu={handleElementContextMenu}
       />
     )
   }
@@ -792,9 +868,17 @@ const Canvas = () => {
   }
 
   return (
-    <div ref={containerRef} className="flex-1 w-full h-full bg-muted relative overflow-hidden">
-      {/* Frame Navigation - always visible */}
-      <FrameNavigation />
+    <>
+      <CanvasContextMenu
+        elementId={contextMenuElement}
+        position={contextMenuPosition}
+        onDuplicate={handleDuplicateElement}
+        onDelete={handleDeleteElement}
+        onClose={handleCloseContextMenu}
+      />
+      <div ref={containerRef} className="flex-1 w-full h-full bg-muted relative overflow-hidden">
+        {/* Frame Navigation - always visible */}
+        <FrameNavigation />
       
       {/* Frame Toolbar - shown when frame is selected */}
       {isFrameSelected && <FrameToolbar />}
@@ -985,6 +1069,7 @@ const Canvas = () => {
         </Layer>
       </Stage>
     </div>
+    </>
   )
 }
 
