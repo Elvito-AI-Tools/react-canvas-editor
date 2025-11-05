@@ -1052,20 +1052,61 @@ const Canvas = () => {
 
         {/* Snap Guide Lines Layer */}
         <Layer name="snap-guides-layer" listening={false}>
-          {activeSnapLines.map((line, index) => (
-            <Line
-              key={`snap-line-${index}`}
-              points={
-                line.orientation === 'vertical'
-                  ? [line.position, 0, line.position, canvasSize.height]
-                  : [0, line.position, canvasSize.width, line.position]
+          {activeSnapLines.map((line, index) => {
+            // Different rendering for spacing indicators vs snap lines
+            if (line.type === 'spacing' && line.length !== undefined && line.start !== undefined) {
+              // Spacing indicator line - shorter line showing the gap between elements
+              const lineLength = 80; // Fixed visual length for spacing indicators
+              
+              if (line.orientation === 'vertical') {
+                return (
+                  <Line
+                    key={`snap-line-${index}`}
+                    points={[
+                      line.position,
+                      line.start,
+                      line.position,
+                      line.start + lineLength
+                    ]}
+                    stroke="#ff00ff"
+                    strokeWidth={1.5 / zoom}
+                    listening={false}
+                  />
+                );
+              } else {
+                return (
+                  <Line
+                    key={`snap-line-${index}`}
+                    points={[
+                      line.start,
+                      line.position,
+                      line.start + lineLength,
+                      line.position
+                    ]}
+                    stroke="#ff00ff"
+                    strokeWidth={1.5 / zoom}
+                    listening={false}
+                  />
+                );
               }
-              stroke="#ff00ff"
-              strokeWidth={1 / zoom}
-              dash={[4 / zoom, 4 / zoom]}
-              listening={false}
-            />
-          ))}
+            }
+            
+            // Regular snap line - full canvas width/height
+            return (
+              <Line
+                key={`snap-line-${index}`}
+                points={
+                  line.orientation === 'vertical'
+                    ? [line.position, 0, line.position, canvasSize.height]
+                    : [0, line.position, canvasSize.width, line.position]
+                }
+                stroke="#ff00ff"
+                strokeWidth={1 / zoom}
+                dash={[4 / zoom, 4 / zoom]}
+                listening={false}
+              />
+            );
+          })}
         </Layer>
       </Stage>
     </div>

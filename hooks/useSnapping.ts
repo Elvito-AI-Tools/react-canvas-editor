@@ -4,6 +4,9 @@ import type Konva from 'konva';
 export interface SnapLine {
   orientation: 'vertical' | 'horizontal';
   position: number; // x for vertical, y for horizontal
+  type?: 'snap' | 'spacing'; // 'snap' for alignment guides, 'spacing' for equal spacing indicators
+  length?: number; // For spacing indicators, the length of the gap being shown
+  start?: number; // Starting position for spacing indicators
 }
 
 export interface SnapResult {
@@ -54,6 +57,12 @@ interface UseSnappingProps {
  *    - Equal vertical spacing between three or more aligned elements
  *    - Maintains consistent gaps when moving elements
  * 
+ * 5. EQUAL SPACING INDICATORS
+ *    - Visual guide lines appear when an element has equal spacing between two others
+ *    - Shows horizontal spacing lines when element is vertically centered between two elements
+ *    - Shows vertical spacing lines when element is horizontally centered between two elements
+ *    - Helps achieve balanced layouts by providing visual feedback
+ * 
  * All snapping activates when the element comes within the snapThreshold distance
  * (default: 5 pixels) of any snap point. Visual guide lines appear to indicate
  * active snap positions.
@@ -62,6 +71,104 @@ interface UseSnappingProps {
 interface SpacingResult {
   snapPosition: number;
   snapLines: SnapLine[];
+}
+
+/**
+ * Helper function to detect equal spacing between three elements
+ * Returns spacing guide lines when element is centered between two others
+ */
+function detectEqualSpacing(
+  nodeRect: { x: number; y: number; width: number; height: number },
+  otherRects: Array<{ x: number; y: number; width: number; height: number }>,
+  threshold: number
+): SnapLine[] {
+  const spacingLines: SnapLine[] = [];
+
+  // Check vertical equal spacing (element between two others vertically)
+  for (let i = 0; i < otherRects.length; i++) {
+    for (let j = 0; j < otherRects.length; j++) {
+      if (i === j) continue;
+
+      const rect1 = otherRects[i];
+      const rect2 = otherRects[j];
+
+      // Determine which is above and which is below
+      const above = rect1.y < rect2.y ? rect1 : rect2;
+      const below = rect1.y < rect2.y ? rect2 : rect1;
+
+      // Check if current node is between them
+      if (nodeRect.y > above.y + above.height && nodeRect.y + nodeRect.height < below.y) {
+        // Calculate gaps
+        const gapAbove = nodeRect.y - (above.y + above.height);
+        const gapBelow = below.y - (nodeRect.y + nodeRect.height);
+
+        // If gaps are equal (within threshold), show spacing indicators
+        if (Math.abs(gapAbove - gapBelow) < threshold) {
+          // Guide line for gap above
+          spacingLines.push({
+            orientation: 'horizontal',
+            position: above.y + above.height + gapAbove / 2,
+            type: 'spacing',
+            length: gapAbove,
+            start: Math.min(nodeRect.x, above.x),
+          });
+
+          // Guide line for gap below
+          spacingLines.push({
+            orientation: 'horizontal',
+            position: nodeRect.y + nodeRect.height + gapBelow / 2,
+            type: 'spacing',
+            length: gapBelow,
+            start: Math.min(nodeRect.x, below.x),
+          });
+        }
+      }
+    }
+  }
+
+  // Check horizontal equal spacing (element between two others horizontally)
+  for (let i = 0; i < otherRects.length; i++) {
+    for (let j = 0; j < otherRects.length; j++) {
+      if (i === j) continue;
+
+      const rect1 = otherRects[i];
+      const rect2 = otherRects[j];
+
+      // Determine which is left and which is right
+      const left = rect1.x < rect2.x ? rect1 : rect2;
+      const right = rect1.x < rect2.x ? rect2 : rect1;
+
+      // Check if current node is between them
+      if (nodeRect.x > left.x + left.width && nodeRect.x + nodeRect.width < right.x) {
+        // Calculate gaps
+        const gapLeft = nodeRect.x - (left.x + left.width);
+        const gapRight = right.x - (nodeRect.x + nodeRect.width);
+
+        // If gaps are equal (within threshold), show spacing indicators
+        if (Math.abs(gapLeft - gapRight) < threshold) {
+          // Guide line for gap on left
+          spacingLines.push({
+            orientation: 'vertical',
+            position: left.x + left.width + gapLeft / 2,
+            type: 'spacing',
+            length: gapLeft,
+            start: Math.min(nodeRect.y, left.y),
+          });
+
+          // Guide line for gap on right
+          spacingLines.push({
+            orientation: 'vertical',
+            position: nodeRect.x + nodeRect.width + gapRight / 2,
+            type: 'spacing',
+            length: gapRight,
+            start: Math.min(nodeRect.y, right.y),
+          });
+        }
+      }
+    }
+  }
+
+  return spacingLines;
 }
 
 /**
@@ -323,6 +430,19 @@ export function useSnapping({
         if (verticalSpacing) {
           snappedY = verticalSpacing.snapPosition;
           snapLines.push(...verticalSpacing.snapLines);
+        }
+
+        // ==========================================
+        // 5. EQUAL SPACING INDICATORS
+        // ==========================================
+        // Show visual guides when element has equal spacing between two others
+        const equalSpacingLines = detectEqualSpacing(
+          nodeRect,
+          otherNodes,
+          snapThreshold
+        );
+        if (equalSpacingLines.length > 0) {
+          snapLines.push(...equalSpacingLines);
         }
       }
 
