@@ -20,8 +20,98 @@ import { ColorPickerPanel } from '../frame-toolbar/color-picker-panel'
 import type { TextElement } from '@/types/editor'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { LayeringDropdown } from '../layering-dropdown/layering-dropdown'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type ActivePicker = 'text' | 'background' | null
+
+const FONT_FAMILIES = [
+  // Modern Sans-Serif
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Open Sans', label: 'Open Sans' },
+  { value: 'Lato', label: 'Lato' },
+  { value: 'Montserrat', label: 'Montserrat' },
+  { value: 'Poppins', label: 'Poppins' },
+  { value: 'Raleway', label: 'Raleway' },
+  { value: 'Nunito', label: 'Nunito' },
+  { value: 'Rubik', label: 'Rubik' },
+  { value: 'Work Sans', label: 'Work Sans' },
+  { value: 'DM Sans', label: 'DM Sans' },
+  { value: 'Josefin Sans', label: 'Josefin Sans' },
+  { value: 'PT Sans', label: 'PT Sans' },
+  { value: 'Quicksand', label: 'Quicksand' },
+  { value: 'Comfortaa', label: 'Comfortaa' },
+  { value: 'Fredoka', label: 'Fredoka' },
+  { value: 'Epilogue', label: 'Epilogue' },
+  { value: 'Space Grotesk', label: 'Space Grotesk' },
+  
+  // Classic System Fonts
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Verdana', label: 'Verdana' },
+  { value: 'Trebuchet MS', label: 'Trebuchet MS' },
+  
+  // Serif Fonts
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Playfair Display', label: 'Playfair Display' },
+  { value: 'Merriweather', label: 'Merriweather' },
+  { value: 'Lora', label: 'Lora' },
+  { value: 'Crimson Text', label: 'Crimson Text' },
+  { value: 'EB Garamond', label: 'EB Garamond' },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond' },
+  { value: 'Libre Baskerville', label: 'Libre Baskerville' },
+  { value: 'Cinzel', label: 'Cinzel' },
+  
+  // Monospace
+  { value: 'Courier New', label: 'Courier New' },
+  
+  // Display/Bold Fonts
+  { value: 'Impact', label: 'Impact' },
+  { value: 'Bebas Neue', label: 'Bebas Neue' },
+  { value: 'Anton', label: 'Anton' },
+  { value: 'Oswald', label: 'Oswald' },
+  { value: 'Righteous', label: 'Righteous' },
+  { value: 'Abril Fatface', label: 'Abril Fatface' },
+  { value: 'Staatliches', label: 'Staatliches' },
+  { value: 'Russo One', label: 'Russo One' },
+  { value: 'Bungee', label: 'Bungee' },
+  { value: 'Fredericka the Great', label: 'Fredericka the Great' },
+  
+  // Handwriting/Script Fonts
+  { value: 'Dancing Script', label: 'Dancing Script' },
+  { value: 'Pacifico', label: 'Pacifico' },
+  { value: 'Satisfy', label: 'Satisfy' },
+  { value: 'Great Vibes', label: 'Great Vibes' },
+  { value: 'Caveat', label: 'Caveat' },
+  { value: 'Indie Flower', label: 'Indie Flower' },
+  { value: 'Sacramento', label: 'Sacramento' },
+  { value: 'Tangerine', label: 'Tangerine' },
+  { value: 'Courgette', label: 'Courgette' },
+  { value: 'Amatic SC', label: 'Amatic SC' },
+  { value: 'Kalam', label: 'Kalam' },
+  { value: 'Shadows Into Light', label: 'Shadows Into Light' },
+  { value: 'Patrick Hand', label: 'Patrick Hand' },
+  { value: 'Architects Daughter', label: 'Architects Daughter' },
+  { value: 'Permanent Marker', label: 'Permanent Marker' },
+  { value: 'Comic Sans MS', label: 'Comic Sans MS' },
+  
+  // Elegant/Fancy Script
+  { value: 'Lobster', label: 'Lobster' },
+  { value: 'Cookie', label: 'Cookie' },
+  { value: 'Allura', label: 'Allura' },
+  { value: 'Alex Brush', label: 'Alex Brush' },
+  { value: 'Parisienne', label: 'Parisienne' },
+  { value: 'Ballet', label: 'Ballet' },
+  { value: 'Kaushan Script', label: 'Kaushan Script' },
+  { value: 'Yellowtail', label: 'Yellowtail' },
+]
 
 const checkerboardBackground = {
   backgroundImage:
@@ -85,6 +175,10 @@ export const TextToolbar = () => {
     setActivePicker(null)
   }
 
+  const handleFontFamilyChange = (fontFamily: string) => {
+    updateElement(textElement.id, { fontFamily })
+  }
+
   const handleAlignmentChange = () => {
     const alignments: Array<'left' | 'center' | 'right'> = ['left', 'center', 'right']
     const currentIndex = alignments.indexOf(textElement.align as 'left' | 'center' | 'right')
@@ -118,6 +212,21 @@ export const TextToolbar = () => {
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-foreground">Text:</span>
 
+        <Select value={textElement.fontFamily} onValueChange={handleFontFamilyChange}>
+          <SelectTrigger size="sm" className="h-8 w-[140px]">
+            <SelectValue placeholder="Select font" />
+          </SelectTrigger>
+          <SelectContent>
+            {FONT_FAMILIES.map((font) => (
+              <SelectItem key={font.value} value={font.value} style={{ fontFamily: font.value }}>
+                {font.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center gap-2 pl-3 ml-3 border-l border-border">
         <div className="relative">
           <Button
             variant="outline"

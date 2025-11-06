@@ -120,3 +120,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Font family styles for canvas text elements */
+:root {
+  font-feature-settings: normal;
+  font-variation-settings: normal;
+}
+
+/* System fonts don't need CSS variables, they work natively */
+/* Google Fonts are loaded via Next.js and available by their font family name */
