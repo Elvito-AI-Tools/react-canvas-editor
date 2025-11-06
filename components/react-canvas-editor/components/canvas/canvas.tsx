@@ -32,7 +32,7 @@ interface ImageElementComponentProps {
   showSnapLines: (lines: SnapLine[]) => void
   hideSnapLines: () => void
   handleElementClick: (id: string) => void
-  updateElement: (id: string, props: Partial<CanvasElement>) => void
+  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
   hoveredElementId: string | null
   setHoveredElementId: (id: string | null) => void
   selectedId: string | null
@@ -148,7 +148,7 @@ interface IconElementComponentProps {
   showSnapLines: (lines: SnapLine[]) => void
   hideSnapLines: () => void
   handleElementClick: (id: string) => void
-  updateElement: (id: string, props: Partial<CanvasElement>) => void
+  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
   hoveredElementId: string | null
   setHoveredElementId: (id: string | null) => void
   selectedId: string | null
@@ -271,7 +271,7 @@ interface ShapeElementComponentProps {
   showSnapLines: (lines: SnapLine[]) => void
   hideSnapLines: () => void
   handleElementClick: (id: string) => void
-  updateElement: (id: string, props: Partial<CanvasElement>) => void
+  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
   hoveredElementId: string | null
   setHoveredElementId: (id: string | null) => void
   selectedId: string | null
@@ -411,6 +411,7 @@ const Canvas = () => {
     setStageRef,
     addElement,
     deleteElement,
+    setMainFrameRef,
   } = useEditor()
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage>(null)
@@ -422,6 +423,11 @@ const Canvas = () => {
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [contextMenuElement, setContextMenuElement] = React.useState<string | null>(null)
   const [contextMenuPosition, setContextMenuPosition] = React.useState<{ x: number; y: number } | null>(null)
+
+
+  useEffect(() => {
+    setMainFrameRef(mainFrameRef as React.RefObject<Konva.Rect>);
+  }, [setMainFrameRef])
 
   // Register stage ref with context for export functionality
   useEffect(() => {

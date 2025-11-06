@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import { EditorContextType, CANVAS_SIZES, CanvasSize, Frame, CanvasElement } from '@/types/editor';
 import { useSelection } from '@/hooks/useSelection';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import Konva from 'konva';
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
@@ -19,14 +20,85 @@ function createEmptyFrame(name: string): Frame {
 }
 
 export function EditorProvider({ children }: { children: React.ReactNode }) {
+  const initialFrameRef = React.useRef<Frame | null>(null);
+  if (!initialFrameRef.current) {
+    initialFrameRef.current = createEmptyFrame('Page 1');
+  }
+
+  const initialHistorySnapshot = JSON.stringify([initialFrameRef.current!]);
+
   const [canvasSize, setCanvasSize] = useState<CanvasSize>(CANVAS_SIZES[0]);
-  const [frames, setFrames] = useState<Frame[]>([createEmptyFrame('Page 1')]);
+  const [frames, setFrames] = useState<Frame[]>([initialFrameRef.current!]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [stageRef, setStageRef] = useState<React.RefObject<any> | null>(null);
+  const [mainFrameRef, setMainFrameRef] = useState<React.RefObject<Konva.Rect> | null>(null);
+
+  // History management for undo/redo
+  const history = React.useRef<Frame[][]>([
+    JSON.parse(initialHistorySnapshot) as Frame[],
+  ]);
+  const historyStep = React.useRef(0);
+  const historySerialized = React.useRef<string[]>([initialHistorySnapshot]);
 
   // Get current frame
   const currentFrame = useMemo(() => frames[currentFrameIndex], [frames, currentFrameIndex]);
+
+  // Save state to history (called after any state-changing operation)
+  const saveToHistory = useCallback((newFrames: Frame[]) => {
+    // Remove any future history if we're not at the latest step
+    history.current = history.current.slice(0, historyStep.current + 1);
+    historySerialized.current = historySerialized.current.slice(0, historyStep.current + 1);
+
+    const serializedState = JSON.stringify(newFrames);
+    const lastSerializedState = historySerialized.current[historySerialized.current.length - 1];
+
+    // Skip saving if nothing changed compared to the latest history state
+    if (lastSerializedState === serializedState) {
+      return;
+    }
+
+    history.current.push(JSON.parse(serializedState) as Frame[]);
+    historySerialized.current.push(serializedState);
+    historyStep.current += 1;
+
+    // Limit history to 50 steps to prevent memory issues
+    if (history.current.length > 50) {
+      history.current.shift();
+      historySerialized.current.shift();
+      if (historyStep.current > 0) {
+        historyStep.current -= 1;
+      }
+    }
+  }, []);
+
+  // Undo/Redo operations
+  const undo = useCallback(() => {
+    if (historyStep.current === 0) {
+      return; // Nothing to undo
+    }
+    historyStep.current -= 1;
+    const previousStateSerialized = historySerialized.current[historyStep.current];
+    if (!previousStateSerialized) {
+      return;
+    }
+    setFrames(JSON.parse(previousStateSerialized) as Frame[]);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (historyStep.current === historySerialized.current.length - 1) {
+      return; // Nothing to redo
+    }
+    historyStep.current += 1;
+    const nextStateSerialized = historySerialized.current[historyStep.current];
+    if (!nextStateSerialized) {
+      return;
+    }
+    setFrames(JSON.parse(nextStateSerialized) as Frame[]);
+  }, []);
+
+  const canUndo = historyStep.current > 0;
+  const canRedo = historyStep.current < historySerialized.current.length - 1;
 
   // Frame navigation
   const goToFrame = useCallback((index: number) => {
@@ -170,30 +242,51 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         ...newFrames[currentFrameIndex],
         elements: [...newFrames[currentFrameIndex].elements, newElement],
       };
+      saveToHistory(newFrames);
       return newFrames;
     });
 
     return id;
-  }, [canvasSize, currentFrameIndex]);
+  }, [canvasSize, currentFrameIndex, saveToHistory]);
 
-  const updateElement = useCallback((id: string, props: Partial<CanvasElement>) => {
+  const updateElement = useCallback((id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => {
     setFrames(prevFrames => {
-      const newFrames = [...prevFrames];
-      const currentElements = newFrames[currentFrameIndex].elements;
-      const elementIndex = currentElements.findIndex(el => el.id === id);
-      
-      if (elementIndex !== -1) {
-        newFrames[currentFrameIndex] = {
-          ...newFrames[currentFrameIndex],
-          elements: currentElements.map((el, i) =>
-            i === elementIndex ? { ...el, ...props } as CanvasElement : el
-          ),
-        };
+      const frame = prevFrames[currentFrameIndex];
+      if (!frame) {
+        return prevFrames;
       }
-      
+
+      const elementIndex = frame.elements.findIndex(el => el.id === id);
+      if (elementIndex === -1) {
+        return prevFrames;
+      }
+
+      const currentElement = frame.elements[elementIndex] as CanvasElement;
+      const hasChanges = (Object.entries(props) as Array<[keyof CanvasElement, unknown]>).some(
+        ([key, value]) => currentElement[key] !== value,
+      );
+
+      if (!hasChanges) {
+        return prevFrames;
+      }
+
+      const updatedElements = frame.elements.map((el, i) =>
+        i === elementIndex ? ({ ...el, ...props } as CanvasElement) : el
+      );
+
+      const newFrames = [...prevFrames];
+      newFrames[currentFrameIndex] = {
+        ...frame,
+        elements: updatedElements,
+      };
+
+      if (!options?.skipHistory) {
+        saveToHistory(newFrames);
+      }
+
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const deleteElement = useCallback((id: string) => {
     setFrames(prevFrames => {
@@ -202,9 +295,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         ...newFrames[currentFrameIndex],
         elements: newFrames[currentFrameIndex].elements.filter(el => el.id !== id),
       };
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const getElementById = useCallback((id: string) => {
     return currentFrame.elements.find(el => el.id === id);
@@ -228,9 +322,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const sendBackward = useCallback((id: string) => {
     setFrames(prevFrames => {
@@ -249,9 +344,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const bringToFront = useCallback((id: string) => {
     setFrames(prevFrames => {
@@ -269,9 +365,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const sendToBack = useCallback((id: string) => {
     setFrames(prevFrames => {
@@ -289,9 +386,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         };
       }
       
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const reorderElements = useCallback((fromIndex: number, toIndex: number) => {
     setFrames(prevFrames => {
@@ -306,9 +404,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         elements,
       };
       
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   // Frame background setters
   const setFrameBgColor = useCallback((color: string) => {
@@ -318,9 +417,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         ...newFrames[currentFrameIndex],
         bgColor: color,
       };
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const setFrameBgImage = useCallback((url: string | null) => {
     setFrames(prevFrames => {
@@ -329,9 +429,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         ...newFrames[currentFrameIndex],
         bgImage: url,
       };
+      saveToHistory(newFrames);
       return newFrames;
     });
-  }, [currentFrameIndex]);
+  }, [currentFrameIndex, saveToHistory]);
 
   const {
     selectedId,
@@ -349,6 +450,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       }
     },
     onClearSelection: clearSelection,
+    onUndo: undo,
+    onRedo: redo,
   });
 
   const value: EditorContextType = {
@@ -392,6 +495,16 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     // Stage ref
     stageRef,
     setStageRef,
+
+    // Main frame ref
+    mainFrameRef,
+    setMainFrameRef,
+    
+    // Undo/Redo
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   };
 
   return (

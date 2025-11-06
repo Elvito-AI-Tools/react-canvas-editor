@@ -1,3 +1,5 @@
+import Konva from "konva";
+
 // Base interface for all canvas elements
 export interface BaseElement {
   id: string;
@@ -146,7 +148,7 @@ export interface EditorContextType {
   elements: CanvasElement[];
   selectedId: string | null;
   addElement: (type: CanvasElement['type'], initialProps?: Partial<CanvasElement>) => string;
-  updateElement: (id: string, props: Partial<CanvasElement>) => void;
+  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void;
   deleteElement: (id: string) => void;
   setSelectedId: (id: string | null) => void;
   getElementById: (id: string) => CanvasElement | undefined;
@@ -167,10 +169,20 @@ export interface EditorContextType {
   frameBgImage: string | null;
   setFrameBgColor: (color: string) => void;
   setFrameBgImage: (url: string | null) => void;
+
+  //main frame ref
+  mainFrameRef: React.RefObject<Konva.Rect> | null;
+  setMainFrameRef: (ref: React.RefObject<Konva.Rect>) => void;
   
   // Stage ref for export functionality
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stageRef: React.RefObject<any> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setStageRef: (ref: React.RefObject<any>) => void;
+  
+  // Undo/Redo
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }

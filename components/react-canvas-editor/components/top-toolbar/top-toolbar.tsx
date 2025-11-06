@@ -6,9 +6,11 @@ import { Separator } from '@/components/ui/separator'
 import { ThemeTrigger } from '@/components/ui/theme-trigger'
 import { ExportDropdown } from './export-dropdown'
 import { useExport, type ExportFormat } from '@/hooks/useExport'
+import { Button } from '@/components/ui/button'
+import { Undo2, Redo2 } from 'lucide-react'
 
 const TopToolbar = () => {
-  const { canvasSize, setCanvasSize, stageRef } = useEditor();
+  const { canvasSize, setCanvasSize, stageRef, undo, redo, canUndo, canRedo } = useEditor();
   
   // Initialize export hook
   const { exportAllFrames, isExporting, exportProgress } = useExport(stageRef);
@@ -24,6 +26,35 @@ const TopToolbar = () => {
     </div>
     
     <div className="flex items-center gap-4">
+      {/* Undo/Redo buttons */}
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={undo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+          className="h-9 w-9"
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={redo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Shift+Z or Ctrl+Y)"
+          className="h-9 w-9"
+        >
+          <Redo2 className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <Separator
+        orientation="vertical"
+        className="mx-2 data-[orientation=vertical]:h-4"
+      />
+      
       <Select
         value={canvasSize.id}
         onValueChange={(value) => {

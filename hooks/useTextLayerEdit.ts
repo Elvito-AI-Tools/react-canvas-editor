@@ -4,7 +4,7 @@ import type { TextElement, CanvasElement } from '@/types/editor'
 
 interface UseTextLayerEditProps {
   getElementById: (id: string) => CanvasElement | undefined
-  updateElement: (id: string, props: Partial<CanvasElement>) => void
+  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
   zoom: number
   position: { x: number; y: number }
   stageRef: React.RefObject<Konva.Stage | null>
