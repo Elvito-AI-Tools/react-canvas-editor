@@ -435,17 +435,23 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
   }, [currentFrameIndex, saveToHistory]);
 
   const {
-    selectedId,
+    selectedIds,
+    setSelectedIds,
     clearSelection,
-    setSelectedId,
-  } = useSelection(currentFrame.elements);
+  } = useSelection(currentFrame.elements);    
+  const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
 
   // Handle keyboard shortcuts
   useKeyboardShortcuts({
     selectedId,
     onDelete: () => {
-      if (selectedId && selectedId !== 'main-frame') {
-        deleteElement(selectedId);
+      if (selectedIds.length > 0 && !selectedIds.includes('main-frame')) {
+        // Delete all selected elements
+        selectedIds.forEach(id => {
+          if (id !== 'main-frame') {
+            deleteElement(id);
+          }
+        });
         clearSelection();
       }
     },
@@ -468,11 +474,11 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     
     // Element operations
     elements: currentFrame.elements,
-    selectedId,
+    selectedIds,
     addElement,
     updateElement,
     deleteElement,
-    setSelectedId,
+    setSelectedIds,
     getElementById,
     
     // Layering operations

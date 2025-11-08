@@ -2,21 +2,21 @@ import { useState, useCallback } from 'react';
 import { CanvasElement } from '@/types/editor';
 
 export function useSelection(elements: CanvasElement[]) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const selectElement = useCallback((id: string) => {
-    setSelectedId(id);
+    setSelectedIds([id]);
   }, []);
 
   const clearSelection = useCallback(() => {
-    setSelectedId(null);
+    setSelectedIds([]);
   }, []);
 
   return {
-    selectedId,
+    selectedIds,
     selectElement,
     clearSelection,
-    setSelectedId,
+    setSelectedIds,
   };
 }
 

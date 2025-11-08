@@ -146,11 +146,11 @@ export interface EditorContextType {
   
   // Element operations (scoped to current frame)
   elements: CanvasElement[];
-  selectedId: string | null;
+  selectedIds: string[]; // Array of selected element IDs for multi-select
   addElement: (type: CanvasElement['type'], initialProps?: Partial<CanvasElement>) => string;
   updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void;
   deleteElement: (id: string) => void;
-  setSelectedId: (id: string | null) => void;
+  setSelectedIds: (ids: string[]) => void; // For multi-selection
   getElementById: (id: string) => CanvasElement | undefined;
   
   // Layering operations
