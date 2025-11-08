@@ -1,12 +1,12 @@
 "use client"
 
 import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { Stage, Layer, Rect, Label, Tag, Text as KonvaText, Transformer, Line, Image as KonvaImage, Shape } from 'react-konva'
+import { Stage, Layer, Rect, Transformer, Line } from 'react-konva'
 import { useEditor } from '@/contexts/EditorContext'
 import { useZoom } from '@/hooks/useZoom'
-import { useSnapping, type SnapLine } from '@/hooks/useSnapping'
+import { useSnapping } from '@/hooks/useSnapping'
 import { useTextLayerEdit } from '@/hooks/useTextLayerEdit'
-import type Konva from 'konva'
+import Konva from 'konva'
 import { Button } from '@/components/ui/button'
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react'
 import { FrameToolbar } from '../layers-toolbars/frame-toolbar/frame-toolbar'
@@ -17,381 +17,12 @@ import { IconToolbar } from '../layers-toolbars/icon-toolbar/icon-toolbar'
 import { FrameNavigation } from '../frame-navigation/frame-navigation'
 import { CanvasContextMenu } from './canvas-context-menu'
 import type { CanvasElement, TextElement, ImageElement, ShapeElement, IconElement } from '@/types/editor'
-import useImage from 'use-image'
-import { SHAPE_DEFINITIONS } from '@/lib/shapes'
-import { iconToDataURL } from '@/lib/icons'
+import ImageElementComponent from './components/image-element'
+import IconElementComponent from './components/icon-element'
+import ShapeElementComponent from './components/shape-element'
+import TextElementComponent from './components/text-element'
 
-/**
- * ImageElementComponent - Handles loading and rendering of image elements
- */
-interface ImageElementComponentProps {
-  element: ImageElement
-  elementNodeRefs: React.MutableRefObject<Record<string, Konva.Node | null>>
-  containerRef: React.RefObject<HTMLDivElement | null>
-  calculateSnapPosition: (node: Konva.Node) => { x: number; y: number; snapLines: SnapLine[] }
-  showSnapLines: (lines: SnapLine[]) => void
-  hideSnapLines: () => void
-  handleElementClick: (id: string) => void
-  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
-  hoveredElementId: string | null
-  setHoveredElementId: (id: string | null) => void
-  selectedId: string | null
-  onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => void
-}
 
-const ImageElementComponent = ({ 
-  element, 
-  elementNodeRefs, 
-  containerRef,
-  calculateSnapPosition,
-  showSnapLines,
-  hideSnapLines,
-  handleElementClick,
-  updateElement,
-  setHoveredElementId,
-  onContextMenu,
-}: ImageElementComponentProps) => {
-  const [image] = useImage(element.src, 'anonymous')
-
-  return (
-    <KonvaImage
-      ref={(node) => {
-        if (node) {
-          elementNodeRefs.current[element.id] = node
-        } else {
-          delete elementNodeRefs.current[element.id]
-        }
-      }}
-      image={image}
-      x={element.x}
-      y={element.y}
-      width={element.width}
-      height={element.height}
-      scaleX={element.scaleX}
-      scaleY={element.scaleY}
-      rotation={element.rotation}
-      draggable={element.draggable}
-      name={element.id}
-      onClick={(e) => {
-        e.cancelBubble = true
-        handleElementClick(element.id)
-      }}
-      onTap={(e) => {
-        e.cancelBubble = true
-        handleElementClick(element.id)
-      }}
-      onDragStart={() => handleElementClick(element.id)}
-      onDragMove={(e) => {
-        const node = e.target
-        const snapResult = calculateSnapPosition(node)
-        node.x(snapResult.x)
-        node.y(snapResult.y)
-        showSnapLines(snapResult.snapLines)
-      }}
-      onDragEnd={(e) => {
-        const node = e.target
-        hideSnapLines()
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-        })
-      }}
-      onTransform={(e) => {
-        const node = e.target
-        const snapResult = calculateSnapPosition(node)
-        showSnapLines(snapResult.snapLines)
-      }}
-      onTransformEnd={(e) => {
-        const node = e.target as Konva.Image
-        hideSnapLines()
-        const scaleX = node.scaleX()
-        const scaleY = node.scaleY()
-        
-        // Update element with new dimensions
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-          width: Math.max(5, element.width * scaleX),
-          height: Math.max(5, element.height * scaleY),
-          rotation: node.rotation(),
-        })
-        
-        // Reset scale
-        node.scaleX(1)
-        node.scaleY(1)
-      }}
-      onMouseEnter={() => {
-        setHoveredElementId(element.id)
-        if (containerRef.current) {
-          containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
-        }
-      }}
-      onMouseLeave={() => {
-        setHoveredElementId(null)
-        if (containerRef.current) {
-          containerRef.current.style.cursor = 'default'
-        }
-      }}
-      onContextMenu={(e) => onContextMenu(e, element.id)}
-    />
-  )
-}
-
-/**
- * IconElementComponent - Handles rendering of icon elements
- */
-interface IconElementComponentProps {
-  element: IconElement
-  elementNodeRefs: React.MutableRefObject<Record<string, Konva.Node | null>>
-  containerRef: React.RefObject<HTMLDivElement | null>
-  calculateSnapPosition: (node: Konva.Node) => { x: number; y: number; snapLines: SnapLine[] }
-  showSnapLines: (lines: SnapLine[]) => void
-  hideSnapLines: () => void
-  handleElementClick: (id: string) => void
-  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
-  hoveredElementId: string | null
-  setHoveredElementId: (id: string | null) => void
-  selectedId: string | null
-  onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => void
-}
-
-const IconElementComponent = ({ 
-  element, 
-  elementNodeRefs, 
-  containerRef,
-  calculateSnapPosition,
-  showSnapLines,
-  hideSnapLines,
-  handleElementClick,
-  updateElement,
-  setHoveredElementId,
-  onContextMenu,
-}: IconElementComponentProps) => {
-  // Convert icon to data URL
-  const dataUrl = React.useMemo(() => {
-    return iconToDataURL(element.iconComponent, element.color, 512)
-  }, [element.iconComponent, element.color])
-
-  const [image] = useImage(dataUrl)
-
-  return (
-    <KonvaImage
-      ref={(node) => {
-        if (node) {
-          elementNodeRefs.current[element.id] = node
-        } else {
-          delete elementNodeRefs.current[element.id]
-        }
-      }}
-      image={image}
-      x={element.x}
-      y={element.y}
-      width={element.size}
-      height={element.size}
-      scaleX={element.scaleX}
-      scaleY={element.scaleY}
-      rotation={element.rotation}
-      draggable={element.draggable}
-      name={element.id}
-      onClick={(e) => {
-        e.cancelBubble = true
-        handleElementClick(element.id)
-      }}
-      onTap={(e) => {
-        e.cancelBubble = true
-        handleElementClick(element.id)
-      }}
-      onDragStart={() => handleElementClick(element.id)}
-      onDragMove={(e) => {
-        const node = e.target
-        const snapResult = calculateSnapPosition(node)
-        node.x(snapResult.x)
-        node.y(snapResult.y)
-        showSnapLines(snapResult.snapLines)
-      }}
-      onDragEnd={(e) => {
-        const node = e.target
-        hideSnapLines()
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-        })
-      }}
-      onTransform={(e) => {
-        const node = e.target
-        const snapResult = calculateSnapPosition(node)
-        showSnapLines(snapResult.snapLines)
-      }}
-      onTransformEnd={(e) => {
-        const node = e.target as Konva.Image
-        hideSnapLines()
-        const scaleX = node.scaleX()
-        const scaleY = node.scaleY()
-        
-        // Update element with new size (maintain aspect ratio)
-        const avgScale = (scaleX + scaleY) / 2
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-          size: Math.max(20, element.size * avgScale),
-          rotation: node.rotation(),
-          scaleX: 1,
-          scaleY: 1,
-        })
-        
-        // Reset scale
-        node.scaleX(1)
-        node.scaleY(1)
-      }}
-      onMouseEnter={() => {
-        setHoveredElementId(element.id)
-        if (containerRef.current) {
-          containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
-        }
-      }}
-      onMouseLeave={() => {
-        setHoveredElementId(null)
-        if (containerRef.current) {
-          containerRef.current.style.cursor = 'default'
-        }
-      }}
-      onContextMenu={(e) => onContextMenu(e, element.id)}
-    />
-  )
-}
-
-/**
- * ShapeElementComponent - Handles rendering of shape elements
- */
-interface ShapeElementComponentProps {
-  element: ShapeElement
-  elementNodeRefs: React.MutableRefObject<Record<string, Konva.Node | null>>
-  containerRef: React.RefObject<HTMLDivElement | null>
-  calculateSnapPosition: (node: Konva.Node) => { x: number; y: number; snapLines: SnapLine[] }
-  showSnapLines: (lines: SnapLine[]) => void
-  hideSnapLines: () => void
-  handleElementClick: (id: string) => void
-  updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
-  hoveredElementId: string | null
-  setHoveredElementId: (id: string | null) => void
-  selectedId: string | null
-  onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => void
-}
-
-const ShapeElementComponent = ({
-  element,
-  elementNodeRefs,
-  containerRef,
-  calculateSnapPosition,
-  showSnapLines,
-  hideSnapLines,
-  handleElementClick,
-  updateElement,
-  setHoveredElementId,
-  onContextMenu,
-}: ShapeElementComponentProps) => {
-  const shapeDefinition = SHAPE_DEFINITIONS[element.shapeType]
-
-  return (
-    <Shape
-      ref={(node) => {
-        if (node) {
-          elementNodeRefs.current[element.id] = node
-        } else {
-          delete elementNodeRefs.current[element.id]
-        }
-      }}
-      x={element.x}
-      y={element.y}
-      width={element.width}
-      height={element.height}
-      scaleX={element.scaleX}
-      scaleY={element.scaleY}
-      rotation={element.rotation}
-      draggable={element.draggable}
-      name={element.id}
-      fill={element.fill}
-      stroke={element.stroke}
-      strokeWidth={element.strokeWidth}
-      sceneFunc={(context, shape) => {
-        const width = shape.width()
-        const height = shape.height()
-        
-        // Get the native canvas context
-        const ctx = context as unknown as CanvasRenderingContext2D
-        
-        // Call the shape's draw function
-        shapeDefinition.drawFunc(ctx, width, height)
-        
-        // Important: fill and stroke the shape
-        context.fillStrokeShape(shape)
-      }}
-      onClick={(e) => {
-        e.cancelBubble = true
-        handleElementClick(element.id)
-      }}
-      onTap={(e) => {
-        e.cancelBubble = true
-        handleElementClick(element.id)
-      }}
-      onDragStart={() => handleElementClick(element.id)}
-      onDragMove={(e) => {
-        const node = e.target
-        const snapResult = calculateSnapPosition(node)
-        node.x(snapResult.x)
-        node.y(snapResult.y)
-        showSnapLines(snapResult.snapLines)
-      }}
-      onDragEnd={(e) => {
-        const node = e.target
-        hideSnapLines()
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-        })
-      }}
-      onTransform={(e) => {
-        const node = e.target
-        const snapResult = calculateSnapPosition(node)
-        showSnapLines(snapResult.snapLines)
-      }}
-      onTransformEnd={(e) => {
-        const node = e.target as Konva.Shape
-        hideSnapLines()
-        const scaleX = node.scaleX()
-        const scaleY = node.scaleY()
-        
-        // Update element with new dimensions
-        updateElement(element.id, {
-          x: node.x(),
-          y: node.y(),
-          width: Math.max(10, element.width * scaleX),
-          height: Math.max(10, element.height * scaleY),
-          rotation: node.rotation(),
-          scaleX: 1,
-          scaleY: 1,
-        })
-        
-        // Reset scale
-        node.scaleX(1)
-        node.scaleY(1)
-      }}
-      onMouseEnter={() => {
-        setHoveredElementId(element.id)
-        if (containerRef.current) {
-          containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
-        }
-      }}
-      onMouseLeave={() => {
-        setHoveredElementId(null)
-        if (containerRef.current) {
-          containerRef.current.style.cursor = 'default'
-        }
-      }}
-      onContextMenu={(e) => onContextMenu(e, element.id)}
-    />
-  )
-}
 
 /**
  * Canvas component renders the main Konva Stage that fills the entire container
@@ -403,8 +34,8 @@ const Canvas = () => {
     canvasSize,
     frameBgColor,
     frameBgImage,
-    selectedId,
-    setSelectedId,
+    selectedIds,
+    setSelectedIds,
     elements,
     updateElement,
     getElementById,
@@ -423,6 +54,16 @@ const Canvas = () => {
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [contextMenuElement, setContextMenuElement] = React.useState<string | null>(null)
   const [contextMenuPosition, setContextMenuPosition] = React.useState<{ x: number; y: number } | null>(null)
+  
+  // Drag selection state
+  const [selectionRect, setSelectionRect] = useState<{
+    visible: boolean;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }>({ visible: false, x1: 0, y1: 0, x2: 0, y2: 0 })
+  const isSelecting = useRef(false)
 
 
   useEffect(() => {
@@ -462,7 +103,7 @@ const Canvas = () => {
     canvasHeight: canvasSize.height,
     snapThreshold: 5,
     elementNodesRef: elementNodeRefs,
-    currentElementId: selectedId ?? undefined,
+    currentElementId: selectedIds[0] ?? undefined,
   })
 
   // Use the text layer edit hook
@@ -482,12 +123,116 @@ const Canvas = () => {
     elementNodeRefs,
   })
 
-  const isFrameSelected = selectedId === 'main-frame'
-  const selectedElement = selectedId ? getElementById(selectedId) : undefined
+  const isFrameSelected = selectedIds[0] === 'main-frame'
+  const selectedElement = selectedIds[0] ? getElementById(selectedIds[0]) : undefined
 
-  const handleElementClick = (id: string) => {
-    setSelectedId(id)
+  const handleElementClick = (id: string, metaKey?: boolean, shiftKey?: boolean) => {
+    
+    const metaPressed = metaKey || shiftKey;
+    const isAlreadySelected = selectedIds.includes(id);
+    
+    if (!metaPressed && !isAlreadySelected) {
+      // If no key pressed and the node is not selected, select just one
+      setSelectedIds([id]);
+    } else if (metaPressed && isAlreadySelected) {
+      // If we pressed keys and node was selected, remove it from selection
+      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+    } else if (metaPressed && !isAlreadySelected) {
+      // Add the node into selection
+      setSelectedIds([...selectedIds, id]);
+    }
   }
+  
+  // Handle drag selection start
+  const handleSelectionStart = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Only start selection if clicking on stage or main-frame
+    if (e.target !== stageRef.current && e.target !== mainFrameRef.current) {
+      return;
+    }
+    
+    const stage = e.target.getStage();
+    if (!stage) return;
+    
+    isSelecting.current = true;
+    const pos = stage.getPointerPosition();
+    if (!pos) return;
+    
+    // Convert screen coordinates to canvas coordinates
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    const canvasPos = transform.point(pos);
+    
+    setSelectionRect({
+      visible: true,
+      x1: canvasPos.x,
+      y1: canvasPos.y,
+      x2: canvasPos.x,
+      y2: canvasPos.y,
+    });
+  };
+  
+  // Handle drag selection move
+  const handleSelectionMove = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Do nothing if we didn't start selection
+    if (!isSelecting.current) {
+      return;
+    }
+    
+    const stage = e.target.getStage();
+    if (!stage) return;
+    
+    const pos = stage.getPointerPosition();
+    if (!pos) return;
+    
+    // Convert screen coordinates to canvas coordinates
+    const transform = stage.getAbsoluteTransform().copy().invert();
+    const canvasPos = transform.point(pos);
+    
+    setSelectionRect({
+      ...selectionRect,
+      x2: canvasPos.x,
+      y2: canvasPos.y,
+    });
+  };
+  
+  // Handle drag selection end
+  const handleSelectionEnd = () => {
+    // Do nothing if we didn't start selection
+    if (!isSelecting.current) {
+      return;
+    }
+
+    
+    isSelecting.current = false;
+    
+    // Update visibility in timeout, so we can check it in click event
+    setTimeout(() => {
+      setSelectionRect({
+        ...selectionRect,
+        visible: false,
+      });
+    });
+    
+    // Calculate selection box
+    const x1 = Math.min(selectionRect.x1, selectionRect.x2);
+    const y1 = Math.min(selectionRect.y1, selectionRect.y2);
+    const x2 = Math.max(selectionRect.x1, selectionRect.x2);
+    const y2 = Math.max(selectionRect.y1, selectionRect.y2);
+    const width = x2 - x1;
+    const height = y2 - y1;
+    
+    const selectionBox = { x: x1, y: y1, width, height };
+    
+    // Find all elements that intersect with selection box
+    const selected = elements.filter(element => {
+      const node = elementNodeRefs.current[element.id];
+      if (!node) return false;
+      
+      const elementBox = node.getClientRect({ relativeTo: node.getParent()! });
+      return Konva.Util.haveIntersection(selectionBox, elementBox);
+    });
+    
+    setSelectedIds(selected.map(el => el.id));
+  };
 
   // Handle duplicate element
   const handleDuplicateElement = useCallback(() => {
@@ -508,16 +253,32 @@ const Canvas = () => {
     const { id, ...propsWithoutId } = duplicateProps;
     
     const newId = addElement(element.type, propsWithoutId);
-    setSelectedId(newId);
-  }, [contextMenuElement, getElementById, addElement, setSelectedId]);
+    setSelectedIds([newId]);
+  }, [contextMenuElement, getElementById, addElement, setSelectedIds]);
 
   // Handle delete element
   const handleDeleteElement = useCallback(() => {
     if (!contextMenuElement) return;
     
-    deleteElement(contextMenuElement);
-    setSelectedId(null);
-  }, [contextMenuElement, deleteElement, setSelectedId]);
+    // Delete all selected elements if multiple are selected
+    if (selectedIds.length > 1) {
+      selectedIds.forEach(id => {
+        if (id !== 'main-frame') {
+          deleteElement(id);
+        }
+      });
+    } else {
+      deleteElement(contextMenuElement);
+    }
+    setSelectedIds([]);
+  }, [contextMenuElement, selectedIds, deleteElement, setSelectedIds]);
+  
+  // Handle group elements (for now, just keeps them selected together)
+  const handleGroupElements = useCallback(() => {
+    // For now, grouping just means keeping the current selection
+    // In a full implementation, this would create a Konva.Group
+    // The elements are already visually grouped through the transformer
+  }, []);
 
   // Handle closing context menu
   const handleCloseContextMenu = useCallback(() => {
@@ -544,131 +305,28 @@ const Canvas = () => {
     });
     
     setContextMenuElement(elementId);
-    setSelectedId(elementId);
-  }, [setSelectedId]);
+    setSelectedIds([elementId]);
+  }, [setSelectedIds]);
 
   const renderTextElement = (element: TextElement) => {
-    const fontStyleParts: string[] = []
-    if (element.isBold) fontStyleParts.push('bold')
-    if (element.isItalic) fontStyleParts.push('italic')
-    if (fontStyleParts.length === 0) {
-      fontStyleParts.push('normal')
-    }
-
-    const decorationParts: string[] = []
-    if (element.isUnderline) decorationParts.push('underline')
-    if (element.isStrikethrough) decorationParts.push('line-through')
-
-    const isEditing = editingTextId === element.id
-
     return (
-      <Label
+      <TextElementComponent
         key={element.id}
-        opacity={isEditing ? 0 : 1}
-        listening={!isEditing}
-        ref={(node) => {
-          if (node) {
-            elementNodeRefs.current[element.id] = node
-          } else {
-            delete elementNodeRefs.current[element.id]
-          }
-        }}
-        x={element.x}
-        y={element.y}
-        scaleX={element.scaleX}
-        scaleY={element.scaleY}
-        draggable={element.draggable && !isEditing}
-        rotation={element.rotation}
-        name={element.id}
-        onClick={(e) => {
-          e.cancelBubble = true
-          handleElementClick(element.id)
-        }}
-        onTap={(e) => {
-          e.cancelBubble = true
-          handleElementClick(element.id)
-        }}
-        onDblClick={(e) => {
-          e.cancelBubble = true
-          handleTextDoubleClick(element.id)
-        }}
-        onDblTap={(e) => {
-          e.cancelBubble = true
-          handleTextDoubleClick(element.id)
-        }}
-        onDragStart={() => handleElementClick(element.id)}
-        onDragMove={(e) => {
-          const node = e.target
-          const snapResult = calculateSnapPosition(node)
-          node.x(snapResult.x)
-          node.y(snapResult.y)
-          showSnapLines(snapResult.snapLines)
-        }}
-        onDragEnd={(e) => {
-          const node = e.target
-          hideSnapLines()
-          updateElement(element.id, {
-            x: node.x(),
-            y: node.y(),
-          })
-        }}
-        onTransform={(e) => {
-          const node = e.target
-          const snapResult = calculateSnapPosition(node)
-          showSnapLines(snapResult.snapLines)
-        }}
-        onTransformEnd={(e) => {
-          const node = e.target as unknown as Konva.Label
-          hideSnapLines()
-          const scaleX = node.scaleX()
-          const scaleY = node.scaleY()
-          const newWidth = Math.max(50, element.width * scaleX)
-          const newFontSize = Math.max(6, element.fontSize * scaleY)
-          updateElement(element.id, {
-            x: node.x(),
-            y: node.y(),
-            rotation: node.rotation(),
-            width: Math.round(newWidth),
-            fontSize: Math.round(newFontSize),
-            scaleX: 1,
-            scaleY: 1,
-          })
-          node.scaleX(1)
-          node.scaleY(1)
-        }}
-        onMouseEnter={() => {
-          setHoveredElementId(element.id)
-          if (containerRef.current) {
-            containerRef.current.style.cursor = element.draggable ? 'move' : 'default'
-          }
-        }}
-        onMouseLeave={() => {
-          setHoveredElementId(null)
-          if (containerRef.current) {
-            containerRef.current.style.cursor = 'default'
-          }
-        }}
-        onContextMenu={(e) => handleElementContextMenu(e, element.id)}
-      >
-        <Tag
-          fill={element.backgroundColor ?? 'transparent'}
-          cornerRadius={6}
-          stroke="transparent"
-          strokeWidth={0}
-        />
-        <KonvaText
-          text={element.text}
-          fontSize={element.fontSize}
-          fontFamily={element.fontFamily}
-          fontStyle={fontStyleParts.join(' ')}
-          fill={element.fill}
-          align={element.align}
-          padding={element.padding}
-          textDecoration={decorationParts.join(' ')}
-          width={element.width}
-          wrap="word"
-        />
-      </Label>
+        element={element}
+        elementNodeRefs={elementNodeRefs}
+        containerRef={containerRef}
+        calculateSnapPosition={calculateSnapPosition}
+        showSnapLines={showSnapLines}
+        hideSnapLines={hideSnapLines}
+        handleElementClick={handleElementClick}
+        updateElement={updateElement}
+        hoveredElementId={hoveredElementId}
+        setHoveredElementId={setHoveredElementId}
+        selectedIds={selectedIds}
+        onContextMenu={handleElementContextMenu}
+        editingTextId={editingTextId}
+        handleTextDoubleClick={handleTextDoubleClick}
+      />
     )
   }
 
@@ -686,7 +344,7 @@ const Canvas = () => {
         updateElement={updateElement}
         hoveredElementId={hoveredElementId}
         setHoveredElementId={setHoveredElementId}
-        selectedId={selectedId}
+        selectedIds={selectedIds}
         onContextMenu={handleElementContextMenu}
       />
     )
@@ -706,7 +364,7 @@ const Canvas = () => {
         updateElement={updateElement}
         hoveredElementId={hoveredElementId}
         setHoveredElementId={setHoveredElementId}
-        selectedId={selectedId}
+        selectedIds={selectedIds}
         onContextMenu={handleElementContextMenu}
       />
     )
@@ -726,7 +384,7 @@ const Canvas = () => {
         updateElement={updateElement}
         hoveredElementId={hoveredElementId}
         setHoveredElementId={setHoveredElementId}
-        selectedId={selectedId}
+        selectedIds={selectedIds}
         onContextMenu={handleElementContextMenu}
       />
     )
@@ -747,35 +405,41 @@ const Canvas = () => {
     }
   }
 
+  // Update transformer when selection changes
   useEffect(() => {
-    const transformer = transformerRef.current
-    if (!transformer) {
-      return
-    }
 
     const rafId = requestAnimationFrame(() => {
-      // Show transformer for selected elements (including when editing text)
-      if (selectedId && selectedId !== 'main-frame') {
-        const selectedNode = elementNodeRefs.current[selectedId]
-        if (selectedNode && selectedNode.getStage()) {
-          transformer.nodes([selectedNode as Konva.Node])
-          transformer.forceUpdate?.()
-          selectedNode.getLayer()?.batchDraw()
-          transformer.getLayer()?.batchDraw()
-          return
-        }
-      }
+    if (selectedIds.length && transformerRef.current) {
+      // Get the nodes from the refs, excluding main-frame
+      const nodes = selectedIds
+        .filter(id => id !== 'main-frame')
+        .map(id => elementNodeRefs.current[id])
+        .filter(node => node);
 
-      if (transformer.nodes().length > 0) {
-        transformer.nodes([])
-        transformer.getLayer()?.batchDraw()
-      }
-    })
+      
+      transformerRef.current.nodes(nodes as Konva.Node[]);
 
-    return () => {
-      cancelAnimationFrame(rafId)
+      // nodes.forEach(node => {
+      //   if (node) {
+      //     node.getLayer()?.batchDraw();
+      //   }
+      // });
+      // transformerRef.current.forceUpdate();
+
+      console.log('we just updated the transformer');
+      // transformerRef.current.getStage()?.batchDraw();
+    } else if (transformerRef.current) {
+      // Clear selection
+      transformerRef.current.nodes([] as Konva.Node[]);
+      // transformerRef.current.forceUpdate();
+      // transformerRef.current.getStage()?.batchDraw();
+
     }
-  }, [selectedId, elements, editingTextId])
+  })
+  return () => {
+    cancelAnimationFrame(rafId);
+  }
+  }, [selectedIds, editingTextId, elements])
 
   const anchorShapeFunc = useCallback<NonNullable<Konva.TransformerConfig['anchorShapeFunc']>>((ctx: CanvasRenderingContext2D, shape: Konva.Shape) => {
     const transformer = transformerRef.current
@@ -832,7 +496,8 @@ const Canvas = () => {
 
   // Handle frame click
   const handleFrameClick = () => {
-    setSelectedId('main-frame')
+    if(selectionRect.visible) return;
+    setSelectedIds(['main-frame'])
   }
 
   // Handle frame hover
@@ -854,9 +519,14 @@ const Canvas = () => {
 
   // Handle stage click (deselect when clicking empty space)
   const handleStageClick = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    // If we are selecting with rect, do nothing
+    if (selectionRect.visible) {
+      return;
+    }
+    
     // If clicking on the stage itself (not the frame), clear selection
     if (e.target === stageRef.current) {
-      setSelectedId(null)
+      setSelectedIds([]);
     }
   }
 
@@ -877,9 +547,11 @@ const Canvas = () => {
     <>
       <CanvasContextMenu
         elementId={contextMenuElement}
+        selectedIds={selectedIds}
         position={contextMenuPosition}
         onDuplicate={handleDuplicateElement}
         onDelete={handleDeleteElement}
+        onGroup={handleGroupElements}
         onClose={handleCloseContextMenu}
       />
       <div ref={containerRef} className="flex-1 w-full h-full bg-muted relative overflow-hidden">
@@ -959,6 +631,12 @@ const Canvas = () => {
         x={position.x}
         y={position.y}
         onClick={handleStageClick}
+        onMouseDown={handleSelectionStart}
+        onMouseMove={handleSelectionMove}
+        onMouseUp={handleSelectionEnd}
+        onTouchStart={handleSelectionStart}
+        onTouchMove={handleSelectionMove}
+        onTouchEnd={handleSelectionEnd}
       >
         {/* Background Layer - contains the persistent main frame */}
         <Layer>
@@ -1020,7 +698,7 @@ const Canvas = () => {
           {elements.map((element) => renderElement(element))}
           
           {/* Hover Indicator - shows bounding box on hover */}
-          {hoveredElementId && hoveredElementId !== selectedId && (() => {
+          {hoveredElementId && hoveredElementId !== selectedIds[0] && (() => {
             const node = elementNodeRefs.current[hoveredElementId]
             if (!node) return null
             
@@ -1038,6 +716,27 @@ const Canvas = () => {
                 dash={[]}
               />
             )
+          })()}
+          
+          {/* Drag Selection Rectangle */}
+          {selectionRect.visible && (() => {
+            const x = Math.min(selectionRect.x1, selectionRect.x2);
+            const y = Math.min(selectionRect.y1, selectionRect.y2);
+            const width = Math.abs(selectionRect.x2 - selectionRect.x1);
+            const height = Math.abs(selectionRect.y2 - selectionRect.y1);
+            
+            return (
+              <Rect
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill="rgba(59, 130, 246, 0.1)"
+                stroke="#3b82f6"
+                strokeWidth={2 / zoom}
+                listening={false}
+              />
+            );
           })()}
           
           <Transformer

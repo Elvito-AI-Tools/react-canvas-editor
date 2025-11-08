@@ -2,26 +2,32 @@
 
 import React from 'react';
 import { useEditor } from '@/contexts/EditorContext';
-import { Copy, Trash2, Layers, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown } from 'lucide-react';
+import { Copy, Trash2, Layers, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Group as GroupIcon } from 'lucide-react';
 
 interface CanvasContextMenuProps {
   elementId: string | null;
+  selectedIds: string[];
   position: { x: number; y: number } | null;
   onDuplicate: () => void;
   onDelete: () => void;
+  onGroup?: () => void;
   onClose: () => void;
 }
 
 export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
   elementId,
+  selectedIds,
   position,
   onDuplicate,
   onDelete,
+  onGroup,
   onClose,
 }) => {
   const { bringForward, sendBackward, bringToFront, sendToBack, elements } = useEditor();
   const [showLayering, setShowLayering] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
+  
+  const hasMultipleSelected = selectedIds.length > 1;
 
   // Check if element is at front or back
   const elementIndex = elementId ? elements.findIndex(el => el.id === elementId) : -1;
@@ -77,6 +83,23 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
           <Copy className="w-4 h-4" />
           Duplicate
         </div>
+
+        {/* Group - only show when multiple elements selected */}
+        {hasMultipleSelected && onGroup && (
+          <>
+            <div className="h-px bg-border my-1 -mx-1" />
+            <div
+              onClick={() => {
+                onGroup();
+                onClose();
+              }}
+              className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+            >
+              <GroupIcon className="w-4 h-4" />
+              Group ({selectedIds.length} layers)
+            </div>
+          </>
+        )}
 
         {/* Separator */}
         <div className="h-px bg-border my-1 -mx-1" />
