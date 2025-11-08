@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import JSZip from 'jszip';
-import { useEditor } from '@/contexts/EditorContext';
+import { useEditor } from '../contexts/EditorContext';
+import type Konva from 'konva';
 
 export type ExportFormat = 'png' | 'jpeg';
 
@@ -10,8 +11,9 @@ export interface ExportOptions {
   pixelRatio?: number; // Scale factor for export (default: 2 for high quality)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type KonvaStage = any;
+type KonvaStage = Konva.Stage;
+
+type KonvaRect = Konva.Rect;
 
 /**
  * Hook to handle exporting frames from the canvas
@@ -20,7 +22,7 @@ type KonvaStage = any;
  * 
  * This approach programmatically switches between frames and captures each one
  */
-export const useExport = (stageRef: React.RefObject<KonvaStage> | null) => {
+export const useExport = (stageRef: React.RefObject<KonvaStage> | null, mainFrameRef: React.RefObject<KonvaRect> | null) => {
   const { frames, goToFrame, currentFrameIndex } = useEditor();
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null);
@@ -43,7 +45,7 @@ export const useExport = (stageRef: React.RefObject<KonvaStage> | null) => {
       frameIndex: number,
       options: ExportOptions
     ): Promise<{ dataUrl: string; filename: string } | null> => {
-      if (!stageRef?.current) {
+      if (!stageRef?.current || !mainFrameRef?.current) {
         console.error('Stage reference not available');
         return null;
       }
@@ -53,12 +55,39 @@ export const useExport = (stageRef: React.RefObject<KonvaStage> | null) => {
       try {
         // Export the stage as data URL
         const mimeType = options.format === 'jpeg' ? 'image/jpeg' : 'image/png';
+        const stage = stageRef.current;
+        const mainFrame = mainFrameRef.current;
+
+        // Save current stage transforms
+        const originalScale = stage.scaleX();
+        const originalX = stage.x();
+        const originalY = stage.y();
+
+        // Temporarily reset stage transforms to get clean export
+        stage.scale({ x: 1, y: 1 });
+        stage.position({ x: 0, y: 0 });
+
+        // Get the mainFrame's position and dimensions in untransformed coordinates
+        const frameX = mainFrame.x();
+        const frameY = mainFrame.y();
+        const frameWidth = mainFrame.width();
+        const frameHeight = mainFrame.height();
+
+        // Export only the canvas frame area at full scale
         const dataUrl = stage.toDataURL({
-          mimeType,
-          quality: options.quality ?? 0.92,
+          mimeType: mimeType,
+          quality: options.quality ?? 0.9,
           pixelRatio: options.pixelRatio ?? 2,
+          x: frameX,
+          y: frameY,
+          width: frameWidth,
+          height: frameHeight,
         });
 
+
+        // Restore stage transforms
+        stage.scale({ x: originalScale, y: originalScale });
+        stage.position({ x: originalX, y: originalY });
         // Generate filename
         const sanitizedName = frame.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         const filename = `${sanitizedName}_${frameIndex + 1}.${options.format}`;
@@ -200,9 +229,83 @@ export const useExport = (stageRef: React.RefObject<KonvaStage> | null) => {
     [stageRef, frames, currentFrameIndex, goToFrame, exportCurrentVisibleFrame, waitForRender, exportCurrentFrame]
   );
 
+  /**
+   * Generates a thumbnail from the first frame without downloading
+   * Returns the data URL for saving to backend
+   * Only captures the actual canvas frame, not the surrounding stage area
+   * Exports at full scale regardless of current zoom level
+   */
+  const generateThumbnail = useCallback(
+    async (options: Partial<ExportOptions> = {}): Promise<string | null> => {
+      if (!stageRef?.current || !mainFrameRef?.current || frames.length === 0) {
+        return null;
+      }
+
+      const originalFrameIndex = currentFrameIndex;
+      
+      try {
+        // Switch to first frame if not already there
+        if (currentFrameIndex !== 0) {
+          goToFrame(0);
+          await waitForRender();
+          await waitForRender();
+        }
+
+        const stage = stageRef.current;
+        const mainFrame = mainFrameRef.current;
+
+        // Save current stage transforms
+        const originalScale = stage.scaleX();
+        const originalX = stage.x();
+        const originalY = stage.y();
+
+        // Temporarily reset stage transforms to get clean export
+        stage.scale({ x: 1, y: 1 });
+        stage.position({ x: 0, y: 0 });
+
+        // Get the mainFrame's position and dimensions in untransformed coordinates
+        const frameX = mainFrame.x();
+        const frameY = mainFrame.y();
+        const frameWidth = mainFrame.width();
+        const frameHeight = mainFrame.height();
+
+        // Export only the canvas frame area at full scale
+        const dataUrl = stage.toDataURL({
+          mimeType: 'image/png',
+          quality: options.quality ?? 0.9,
+          pixelRatio: options.pixelRatio ?? 2,
+          x: frameX,
+          y: frameY,
+          width: frameWidth,
+          height: frameHeight,
+        });
+
+        // Restore stage transforms
+        stage.scale({ x: originalScale, y: originalScale });
+        stage.position({ x: originalX, y: originalY });
+
+        // Restore original frame if needed
+        if (originalFrameIndex !== 0) {
+          goToFrame(originalFrameIndex);
+        }
+
+        return dataUrl;
+      } catch (error) {
+        console.error('Error generating thumbnail:', error);
+        // Restore original frame on error
+        if (originalFrameIndex !== 0) {
+          goToFrame(originalFrameIndex);
+        }
+        return null;
+      }
+    },
+    [stageRef, mainFrameRef, frames, currentFrameIndex, goToFrame, waitForRender]
+  );
+
   return {
     exportAllFrames,
     exportCurrentFrame,
+    generateThumbnail,
     isExporting,
     exportProgress,
   };
