@@ -19,7 +19,6 @@ interface ShapeElementComponentProps {
     updateElement: (id: string, props: Partial<CanvasElement>, options?: { skipHistory?: boolean }) => void
     hoveredElementId: string | null
     setHoveredElementId: (id: string | null) => void
-    selectedId: string | null
     selectedIds: string[]
     onContextMenu: (e: Konva.KonvaEventObject<PointerEvent>, elementId: string) => void
   }
