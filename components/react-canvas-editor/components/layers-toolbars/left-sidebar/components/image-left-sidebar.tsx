@@ -10,7 +10,7 @@ export const ImageLeftSidebar = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebounce(searchQuery, 500)
   const { photos, isLoading, error, searchPhotos } = usePexelsSearch()
-  const { addElement, setSelectedId } = useEditor()
+  const { addElement, setSelectedIds } = useEditor()
 
   // Trigger search when debounced query changes
   useEffect(() => {
@@ -41,7 +41,7 @@ export const ImageLeftSidebar = () => {
     })
     
     // Select the newly created element
-    setSelectedId(elementId)
+    setSelectedIds([elementId])
   }
 
   return (

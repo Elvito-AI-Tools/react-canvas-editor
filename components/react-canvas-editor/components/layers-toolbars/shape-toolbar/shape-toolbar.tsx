@@ -18,8 +18,8 @@ const PRESET_COLORS = [
 ];
 
 export const ShapeToolbar = () => {
-  const { selectedId, getElementById, updateElement } = useEditor();
-  const element = selectedId ? getElementById(selectedId) : undefined;
+  const { selectedIds, getElementById, updateElement } = useEditor();
+  const element = selectedIds[0] ? getElementById(selectedIds[0]) : undefined;
   const shapeElement = element?.type === 'shape' ? (element as ShapeElement) : null;
   const [customColor, setCustomColor] = useState(shapeElement?.fill || '#3b82f6');
 

@@ -32,7 +32,7 @@ const TEXT_TEMPLATES = [
 
 const TextLeftSidebar = () => {
 
-    const { addElement, setSelectedId, canvasSize } = useEditor();
+    const { addElement, setSelectedIds, canvasSize } = useEditor();
 
   const handleAddText = (template: (typeof TEXT_TEMPLATES)[number]) => {
     const id = addElement('text', {
@@ -43,7 +43,7 @@ const TextLeftSidebar = () => {
       x: Math.max(40, canvasSize.width / 2 - 160),
       y: Math.max(40, canvasSize.height / 2 - 80),
     });
-    setSelectedId(id);
+    setSelectedIds([id]);
   };
   return (
     <Tabs defaultValue="library" className="h-full flex flex-col">

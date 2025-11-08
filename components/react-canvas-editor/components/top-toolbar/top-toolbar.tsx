@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/button'
 import { Undo2, Redo2 } from 'lucide-react'
 
 const TopToolbar = () => {
-  const { canvasSize, setCanvasSize, stageRef, undo, redo, canUndo, canRedo } = useEditor();
+  const { canvasSize, setCanvasSize, stageRef,mainFrameRef, undo, redo, canUndo, canRedo } = useEditor();
   
   // Initialize export hook
-  const { exportAllFrames, isExporting, exportProgress } = useExport(stageRef);
+  const { exportAllFrames, isExporting, exportProgress } = useExport(stageRef, mainFrameRef);
   
   // Handle export
   const handleExport = async (format: ExportFormat) => {

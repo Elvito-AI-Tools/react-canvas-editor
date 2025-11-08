@@ -20,8 +20,8 @@ const PRESET_COLORS = [
 const PRESET_SIZES = [40, 60, 80, 100, 120, 160];
 
 export const IconToolbar = () => {
-  const { selectedId, getElementById, updateElement } = useEditor();
-  const element = selectedId ? getElementById(selectedId) : undefined;
+  const { selectedIds, getElementById, updateElement } = useEditor();
+  const element = selectedIds[0] ? getElementById(selectedIds[0]) : undefined;
   const iconElement = element?.type === 'icon' ? (element as IconElement) : null;
   const [customColor, setCustomColor] = useState(iconElement?.color || '#000000');
 

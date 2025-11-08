@@ -129,7 +129,7 @@ const LayerItem: React.FC<LayerItemProps> = ({
 };
 
 const LayersLeftSidebar = () => {
-  const { elements, selectedId, setSelectedId, deleteElement, reorderElements } = useEditor();
+  const { elements, selectedIds, setSelectedIds, deleteElement, reorderElements } = useEditor();
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Reverse the elements array to show frontmost elements at the top
@@ -161,7 +161,7 @@ const LayersLeftSidebar = () => {
   };
 
   const handleSelect = (element: CanvasElement) => {
-    setSelectedId(element.id);
+    setSelectedIds([element.id]);
   };
 
   const handleDelete = (elementId: string) => {
@@ -188,7 +188,7 @@ const LayersLeftSidebar = () => {
                 key={element.id}
                 element={element}
                 index={index}
-                isSelected={selectedId === element.id}
+                isSelected={selectedIds[0] === element.id}
                 onSelect={() => handleSelect(element)}
                 onDelete={() => handleDelete(element.id)}
                 onDragStart={handleDragStart}

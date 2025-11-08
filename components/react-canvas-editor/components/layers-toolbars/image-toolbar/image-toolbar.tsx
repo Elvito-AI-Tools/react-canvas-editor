@@ -8,14 +8,14 @@ import type { ImageElement } from '@/types/editor'
 import { LayeringDropdown } from '../layering-dropdown/layering-dropdown'
 
 export const ImageToolbar = () => {
-  const { selectedId, getElementById, updateElement, canvasSize } = useEditor()
+  const { selectedIds, getElementById, updateElement, canvasSize } = useEditor()
 
   const imageElement = useMemo(() => {
-    if (!selectedId) return null
-    const element = getElementById(selectedId)
+    if (!selectedIds[0]) return null
+    const element = getElementById(selectedIds[0])
     if (!element || element.type !== 'image') return null
     return element as ImageElement
-  }, [getElementById, selectedId])
+  }, [getElementById, selectedIds])
 
   if (!imageElement) return null
 

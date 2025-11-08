@@ -16,7 +16,7 @@ interface UploadedImage {
 }
 
 const UploadLeftSidebar = () => {
-  const { addElement, setSelectedId, canvasSize } = useEditor();
+  const { addElement, setSelectedIds, canvasSize } = useEditor();
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -76,11 +76,11 @@ const UploadLeftSidebar = () => {
         height,
       });
 
-      setSelectedId(elementId);
+      setSelectedIds([elementId]);
     };
 
     img.src = imageUrl;
-  }, [addElement, canvasSize, setSelectedId]);
+  }, [addElement, canvasSize, setSelectedIds]);
 
   const handleRemoveImage = (imageId: string) => {
     setUploadedImages((prev) => prev.filter((img) => img.id !== imageId));

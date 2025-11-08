@@ -121,15 +121,15 @@ const checkerboardBackground = {
 }
 
 export const TextToolbar = () => {
-  const { selectedId, getElementById, updateElement } = useEditor()
+  const { selectedIds, getElementById, updateElement } = useEditor()
   const [activePicker, setActivePicker] = useState<ActivePicker>(null)
 
   const textElement = useMemo(() => {
-    if (!selectedId) return null
-    const element = getElementById(selectedId)
+    if (!selectedIds[0]) return null
+    const element = getElementById(selectedIds[0])
     if (!element || element.type !== 'text') return null
     return element as TextElement
-  }, [getElementById, selectedId])
+  }, [getElementById, selectedIds])
 
   const activeTextStyles = useMemo(() => {
     const styles: string[] = []

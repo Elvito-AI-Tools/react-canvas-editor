@@ -131,7 +131,7 @@ const ICON_LIST: IconItem[] = [
 
 export const IconLeftSidebar = () => {
   const [searchQuery, setSearchQuery] = useState('')
-  const { addElement, setSelectedId } = useEditor()
+  const { addElement, setSelectedIds } = useEditor()
 
   const filteredIcons = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -157,7 +157,7 @@ export const IconLeftSidebar = () => {
       y: 100,
     })
     
-    setSelectedId(elementId)
+    setSelectedIds([elementId])
   }
 
   return (

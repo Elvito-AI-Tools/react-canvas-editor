@@ -35,7 +35,7 @@ const ShapeButton = ({ shape, onClick }: { shape: ShapeDefinition; onClick: () =
 };
 
 const ShapeLeftSidebar = () => {
-  const { addElement, setSelectedId } = useEditor();
+  const { addElement, setSelectedIds } = useEditor();
   const [activeTab, setActiveTab] = useState<'all' | 'lines' | 'basic' | 'geometric' | 'decorative' | 'arrows' | 'organic'>('all');
 
   const handleAddShape = (shapeType: ShapeDefinition['id']) => {
@@ -49,7 +49,7 @@ const ShapeLeftSidebar = () => {
       stroke: isLine ? '#808080' : '#808080',
       strokeWidth: isLine ? 3 : 0,
     });
-    setSelectedId(id);
+    setSelectedIds([id]);
   };
 
   const allShapes = getAllShapes();
